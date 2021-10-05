@@ -15,6 +15,8 @@ func StartStorage() {
 	modelStorage.Init()
 }
 
+// add new model to storage
+// switch modelType to decide witch model to generate
 func AddModel(modelType enum.ModelType, instanceId uint32, title string) {
 	switch modelType {
 	case enum.Log:
@@ -25,10 +27,12 @@ func AddModel(modelType enum.ModelType, instanceId uint32, title string) {
 	}
 }
 
+// return all models
 func GetAllModels() []models.Model {
 	return modelStorage.Models
 }
 
+// return single model by modelType and instanceID
 func GetSingleModel(modelType enum.ModelType, instanceID uint32) (models.Model, error)  {
 	for _, model := range modelStorage.Models {
 		if model.GetParams().Check(modelType, instanceID) {

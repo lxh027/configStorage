@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+// log model. to receive and save logs from instances
+// save to file periodically
 type LogModel struct {
 	Params
 	logs	LogModelData
@@ -14,6 +16,7 @@ type LogModel struct {
 
 type LogModelData []string
 
+// gen log model
 func NewLogModel(instanceId uint32) *LogModel {
 	logModel := LogModel{
 		Params: Params{
@@ -36,6 +39,7 @@ func (model *LogModel) Update(param uint8, data interface{}) error {
 }
 
 func (model *LogModel) Save(path string) error {
+	// open log file with append && create mode
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE, os.ModeAppend)
 	if err != nil {
 		log.Printf("open or create file error, file path: %v", err.Error())
