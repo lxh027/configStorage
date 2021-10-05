@@ -7,6 +7,15 @@ service TestConnection {
   rpc Test(Ping) returns (Pong);
 }
 
+// rpc to send raft instance info
+service MonitorReport {
+  // single instance info
+  rpc InstanceInfo(InstanceMsg) returns (EmptyMsg);
+  // leader info
+  rpc LeaderInfo(LeaderMsg) returns (EmptyMsg);
+}
+
+// test connection msg
 message Ping {
   string ping = 1;
 }
@@ -15,3 +24,46 @@ message Pong {
   string pong = 1;
 }
 
+message EmptyMsg {}
+
+message LeaderMsg {
+  uint32 InstanceID   = 1;
+  uint32 InstanceNums = 2;
+  float  DataSize     = 3;
+}
+
+// instance info
+message InstanceMsg {
+  uint32        InstanceID = 1;
+  RaftStatus    RaftStatus = 2;
+  MemoryStatus  MemoryStatus = 3;
+  IOStatus      IOStatus = 4;
+  repeated string Logs = 5;
+}
+
+message RaftStatus {
+  // raft consistency info
+  uint32 EntryID    = 1;
+  uint32 TermID     = 2;
+  uint32 LeaderID   = 3;
+  // instance id that vote for in the last election
+  uint32 VoteFor    = 4;
+
+  // raft entry log info
+  uint32 LastApplied = 5;
+  uint32 CommitIndex = 6;
+  uint32 LastReceived = 7;
+}
+
+message MemoryStatus {
+  float MemoryUse   = 1;
+}
+
+message IOStatus {
+  // command received
+  uint32 Command    = 1;
+  // heartbeat received
+  uint32 Heartbeat  = 2;
+  // vote request received
+  uint32 Vote       = 3;
+}

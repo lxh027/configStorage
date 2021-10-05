@@ -99,3 +99,129 @@ var TestConnection_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "api.proto",
 }
+
+// MonitorReportClient is the client API for MonitorReport service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MonitorReportClient interface {
+	// single instance info
+	InstanceInfo(ctx context.Context, in *InstanceMsg, opts ...grpc.CallOption) (*EmptyMsg, error)
+	// leader info
+	LeaderInfo(ctx context.Context, in *LeaderMsg, opts ...grpc.CallOption) (*EmptyMsg, error)
+}
+
+type monitorReportClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMonitorReportClient(cc grpc.ClientConnInterface) MonitorReportClient {
+	return &monitorReportClient{cc}
+}
+
+func (c *monitorReportClient) InstanceInfo(ctx context.Context, in *InstanceMsg, opts ...grpc.CallOption) (*EmptyMsg, error) {
+	out := new(EmptyMsg)
+	err := c.cc.Invoke(ctx, "/monitor.MonitorReport/InstanceInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *monitorReportClient) LeaderInfo(ctx context.Context, in *LeaderMsg, opts ...grpc.CallOption) (*EmptyMsg, error) {
+	out := new(EmptyMsg)
+	err := c.cc.Invoke(ctx, "/monitor.MonitorReport/LeaderInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MonitorReportServer is the server API for MonitorReport service.
+// All implementations must embed UnimplementedMonitorReportServer
+// for forward compatibility
+type MonitorReportServer interface {
+	// single instance info
+	InstanceInfo(context.Context, *InstanceMsg) (*EmptyMsg, error)
+	// leader info
+	LeaderInfo(context.Context, *LeaderMsg) (*EmptyMsg, error)
+	mustEmbedUnimplementedMonitorReportServer()
+}
+
+// UnimplementedMonitorReportServer must be embedded to have forward compatible implementations.
+type UnimplementedMonitorReportServer struct {
+}
+
+func (UnimplementedMonitorReportServer) InstanceInfo(context.Context, *InstanceMsg) (*EmptyMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InstanceInfo not implemented")
+}
+func (UnimplementedMonitorReportServer) LeaderInfo(context.Context, *LeaderMsg) (*EmptyMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LeaderInfo not implemented")
+}
+func (UnimplementedMonitorReportServer) mustEmbedUnimplementedMonitorReportServer() {}
+
+// UnsafeMonitorReportServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MonitorReportServer will
+// result in compilation errors.
+type UnsafeMonitorReportServer interface {
+	mustEmbedUnimplementedMonitorReportServer()
+}
+
+func RegisterMonitorReportServer(s grpc.ServiceRegistrar, srv MonitorReportServer) {
+	s.RegisterService(&MonitorReport_ServiceDesc, srv)
+}
+
+func _MonitorReport_InstanceInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstanceMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MonitorReportServer).InstanceInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monitor.MonitorReport/InstanceInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MonitorReportServer).InstanceInfo(ctx, req.(*InstanceMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MonitorReport_LeaderInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaderMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MonitorReportServer).LeaderInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monitor.MonitorReport/LeaderInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MonitorReportServer).LeaderInfo(ctx, req.(*LeaderMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// MonitorReport_ServiceDesc is the grpc.ServiceDesc for MonitorReport service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MonitorReport_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "monitor.MonitorReport",
+	HandlerType: (*MonitorReportServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "InstanceInfo",
+			Handler:    _MonitorReport_InstanceInfo_Handler,
+		},
+		{
+			MethodName: "LeaderInfo",
+			Handler:    _MonitorReport_LeaderInfo_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api.proto",
+}
