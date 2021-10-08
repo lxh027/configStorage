@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// log model. to receive and save logs from instances
+// LogModel log model. to receive and save logs from instances
 // save to file periodically
 type LogModel struct {
 	Params
@@ -16,7 +16,7 @@ type LogModel struct {
 
 type LogModelData []string
 
-// gen log model
+// NewLogModel gen log model
 func NewLogModel(instanceId uint32) *LogModel {
 	logModel := LogModel{
 		Params: Params{

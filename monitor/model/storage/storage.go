@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// struct to store models and configs
+// ModelStorage struct to store models and configs
 type ModelStorage struct {
 	Models 			[]models.Model
 	// interval to save models
@@ -20,7 +20,7 @@ type ModelStorage struct {
 	logPath 		string
 }
 
-// init storage
+// Init init storage
 func (m *ModelStorage) Init() {
 	m.Models = make([]models.Model, 0)
 	m.saveInterval = time.Duration(config.GetModelConfig().Save.Interval)
