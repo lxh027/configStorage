@@ -3,6 +3,7 @@ package grpc_server
 import (
 	"fmt"
 	"google.golang.org/grpc"
+	"log"
 	"monitor/api"
 	"monitor/config"
 	"net"
@@ -23,12 +24,13 @@ func StartServer() {
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)
 	api.RegisterMonitorReportServer(grpcServer, &monitorReportServer{})
-	/*go func() {
+	log.Printf("starting grpc server on %s:%d\n", serverConfig.Grpc.Host, serverConfig.Grpc.Port)
+	go func() {
 		err := grpcServer.Serve(lis)
 		if err != nil {
 			panic("grpc server start error")
 		}
-	}()*/
-	_ = grpcServer.Serve(lis)
+	}()
+	log.Println("grpc server has been started")
 }
 
