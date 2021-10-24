@@ -22,6 +22,9 @@ func AddModel(modelType enum.ModelType, instanceId uint32, title string) {
 	case enum.Log:
 		logModel := models.NewLogModel(instanceId)
 		modelStorage.Models = append(modelStorage.Models, logModel)
+	case enum.Entry:
+		entryModel := models.NewEntryModel(instanceId)
+		modelStorage.Models = append(modelStorage.Models, entryModel)
 	default:
 		log.Println("undefined log type")
 	}

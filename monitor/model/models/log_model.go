@@ -29,6 +29,7 @@ func NewLogModel(instanceId uint32) *LogModel {
 	return &logModel
 }
 
+// Update receive data as LogModelData
 func (model *LogModel) Update(param uint8, data interface{}) error {
 	d, err := data.(LogModelData)
 	if !err {

@@ -7,4 +7,5 @@ const (
 
 	// Log save log from instances
 	Log
+	Entry
 )
