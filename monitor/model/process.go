@@ -17,7 +17,7 @@ func StartStorage() {
 
 // AddModel add new model to storage
 // switch modelType to decide witch model to generate
-func AddModel(modelType enum.ModelType, instanceId uint32, title string) {
+func AddModel(modelType enum.ModelType, instanceId uint32) {
 	switch modelType {
 	case enum.Log:
 		logModel := models.NewLogModel(instanceId)
@@ -28,6 +28,15 @@ func AddModel(modelType enum.ModelType, instanceId uint32, title string) {
 	default:
 		log.Println("undefined log type")
 	}
+}
+
+func UpdateModel(modelType enum.ModelType, instanceId uint32, param uint32, data interface{}) error {
+	for index, model := range modelStorage.Models {
+		if model.GetParams().Check(modelType, instanceId) {
+			return modelStorage.Models[index].Update(param, data)
+		}
+	}
+	return errors.New("model not found")
 }
 
 // GetAllModels return all models

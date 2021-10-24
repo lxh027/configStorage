@@ -30,7 +30,7 @@ func NewLogModel(instanceId uint32) *LogModel {
 }
 
 // Update receive data as LogModelData
-func (model *LogModel) Update(param uint8, data interface{}) error {
+func (model *LogModel) Update(param uint32, data interface{}) error {
 	d, err := data.(LogModelData)
 	if !err {
 		return errors.New("parse log model data error")
