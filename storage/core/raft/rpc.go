@@ -3,7 +3,7 @@ package raft
 import (
 	"context"
 	"storage/api"
-	raft2 "storage/constants/raft"
+	constants "storage/constants/raft"
 	"time"
 )
 
@@ -27,7 +27,7 @@ func (raft *Raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs) (r
 		}
 	}
 
-	if raft.votedFor == raft2.UnVoted || raft.votedFor == args.CandidateID {
+	if raft.votedFor == constants.UnVoted || raft.votedFor == args.CandidateID {
 		raft.votedFor = args.CandidateID
 		reply.VoteGranted = true
 		// TODO: persist
@@ -47,7 +47,7 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 	if raft.currentTerm > args.Term {
 		reply.Success = false
 		return reply, nil
-	} else if raft.state == raft2.Candidate {
+	} else if raft.state == constants.Candidate {
 		// if instance is a candidate, deny the request
 		// and inform the leader's lost by add term id
 		if raft.currentTerm == args.Term {
@@ -56,16 +56,16 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 			return reply, nil
 		}
 		// get a new leader, give up this election
-		raft.state = raft2.Follower
-		raft.stateChange <- raft2.Follower
+		raft.state = constants.Follower
+		raft.stateChange <- constants.Follower
 	}
 
 	// set heartbeat status
 	raft.currentTerm = args.Term
-	raft.votedFor = raft2.UnVoted
+	raft.votedFor = constants.UnVoted
 	raft.heartbeat = true
 
-	if args.PrevLogIndex != raft2.NonLogIndex {
+	if args.PrevLogIndex != constants.NonLogIndex {
 		// can't match leader's state last entry index
 		if raft.currentIndex <= args.PrevLogIndex ||
 			raft.logs[args.PrevLogIndex].Term != args.PrevLogTerm{
@@ -130,7 +130,7 @@ func (raft *Raft) NewEntry(ctx context.Context, args *api.NewEntryArgs) (reply *
 
 	// if not a leader, return leader's msg
 	reply.LeaderID = raft.leaderID
-	if raft.state != raft2.Leader {
+	if raft.state != constants.Leader {
 		reply.Success = false
 		reply.Msg = "instance not a leader"
 		return reply, nil
@@ -150,7 +150,7 @@ func (raft *Raft) NewEntry(ctx context.Context, args *api.NewEntryArgs) (reply *
 
 	// check 4 times, for total 2s
 	for i:=0; i<4; i++ {
-		time.Sleep(raft2.NewEntryTimeout)
+		time.Sleep(constants.NewEntryTimeout)
 		raft.mu.Lock()
 		// if commit index > log index and commit success
 		if raft.commitIndex >= logIndex && raft.logs[logIndex].Status == true {
