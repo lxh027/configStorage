@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option go_package = "lxh027/configStorage/storage/api";
+
+service raft {
+  // candidate request vote rpc
+  rpc RequestVote(RequestVoteArgs) returns ( RequestVoteReply );
+  // leader append entries && heartbeat rpc
+  rpc AppendEntries(AppendEntriesArgs) returns ( AppendEntriesReply);
+}
+
+service state {
+  // receive log reply
+  rpc NewEntry(NewEntryArgs) returns ( NewEntryReply );
+}
+
+
+message RequestVoteArgs {
+  int32 Term         = 1;
+  int32 CandidateID  = 2;
+  int32 LastLogIndex = 3;
+  int32 LastLogTerm  = 4;
+}
+
+message RequestVoteReply {
+  int32 Term       = 1;
+  bool  VoteGranted = 2;
+}
+
+message Log {
+  int32 Term   = 1;
+  int32 Index  = 2;
+  bytes Entry   = 3;
+  bool Status   = 4;
+}
+
+message AppendEntriesArgs {
+  int32 Term         = 1;
+  int32 LeaderID     = 2;
+  int32 PrevLogIndex = 3;
+  int32 PrevLogTerm  = 4;
+  int32 LeaderCommitID = 5;
+  repeated Log Logs   = 6;
+}
+
+message AppendEntriesReply {
+  int32 Term   = 1;
+  bool success  = 2;
+}
+
+message NewEntryArgs {
+  bytes Entry = 1;
+}
+
+message NewEntryReply {
+  bool success  = 1;
+  string msg    = 2;
+  int32 leaderID = 3;
+}
