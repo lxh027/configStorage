@@ -8,13 +8,13 @@ import (
 	"monitor/model/models"
 )
 
-func (server *monitorReportServer) InstanceInfo(ctx context.Context, msg *api.InstanceMsg) (*api.EmptyMsg, error)  {
+func (server *monitorReportServer) InstanceInfo(ctx context.Context, msg *api.InstanceMsg) (*api.EmptyMsg, error) {
 	log.Printf("Receive instance info from %d", msg.InstanceID)
 	// append logs
 	filter.AppendLogs(msg.InstanceID, msg.Logs)
 	// update entry state
 	filter.UpdateEntryState(msg.InstanceID, models.EntryInfo{
-		LastAppend: msg.RaftStatus.LastReceived,
+		LastAppend:  msg.RaftStatus.LastReceived,
 		CommitIndex: msg.RaftStatus.CommitIndex,
 		LastApplied: msg.RaftStatus.LastApplied,
 	})

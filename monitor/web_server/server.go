@@ -8,7 +8,7 @@ import (
 )
 
 // StartServer to start web server
-func StartServer()  {
+func StartServer() {
 	serverConfig := config.GetServerConfig()
 	// set run mode
 	gin.SetMode(serverConfig.Web.Mode)

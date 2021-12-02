@@ -4,9 +4,9 @@ import "monitor/model/enum"
 
 // Params basic params for any model
 type Params struct {
-	ModelType 		enum.ModelType	`json:"model_type"`
-	InstanceID 		uint32			`json:"instance_id"`
-	Title 			string			`json:"title"`
+	ModelType  enum.ModelType `json:"model_type"`
+	InstanceID uint32         `json:"instance_id"`
+	Title      string         `json:"title"`
 }
 
 // Model interface defined of models
@@ -15,7 +15,7 @@ type Model interface {
 	Save(path string) error
 	This() interface{}
 	GetParams() *Params
-	GetData() 	interface{}
+	GetData() interface{}
 }
 
 // Check if model match the wanted model

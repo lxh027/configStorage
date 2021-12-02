@@ -13,7 +13,6 @@ type monitorReportServer struct {
 	api.UnimplementedMonitorReportServer
 }
 
-
 func StartServer() {
 	serverConfig := config.GetServerConfig()
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", serverConfig.Grpc.Host, serverConfig.Grpc.Port))
@@ -33,4 +32,3 @@ func StartServer() {
 	}()
 	log.Println("grpc server has been started")
 }
-

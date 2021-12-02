@@ -14,7 +14,7 @@ type EntryModel struct {
 // EntryInfo contains 3 params.
 type EntryInfo struct {
 	// lastAppend indicates the last entry id received from leader
-	LastAppend 	uint32
+	LastAppend uint32
 	// commitIndex indicates the last entry id labeled as committed
 	CommitIndex uint32
 	// lastApplied indicates the last entry id been applied to state machine
@@ -25,9 +25,9 @@ type EntryInfo struct {
 func NewEntryModel(instanceId uint32) *EntryModel {
 	entryModel := EntryModel{
 		Params: Params{
-			ModelType: enum.Entry,
+			ModelType:  enum.Entry,
 			InstanceID: instanceId,
-			Title: "entry_info",
+			Title:      "entry_info",
 		},
 		entryInfo: EntryInfo{0, 0, 0},
 	}
@@ -35,7 +35,7 @@ func NewEntryModel(instanceId uint32) *EntryModel {
 }
 
 // Update receive data as EntryInfo
-func (model *EntryModel) Update(param uint32, data interface{}) error  {
+func (model *EntryModel) Update(param uint32, data interface{}) error {
 	d, err := data.(EntryInfo)
 	if !err {
 		return errors.New("parse entry info data error")
@@ -49,14 +49,14 @@ func (model *EntryModel) Save(path string) error {
 	return nil
 }
 
-func (model *EntryModel) This() interface{}  {
+func (model *EntryModel) This() interface{} {
 	return model
 }
 
-func (model *EntryModel) GetParams() *Params  {
+func (model *EntryModel) GetParams() *Params {
 	return &model.Params
 }
 
-func (model *EntryModel) GetData() interface{}  {
+func (model *EntryModel) GetData() interface{} {
 	return model.entryInfo
 }

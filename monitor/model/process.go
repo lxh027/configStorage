@@ -10,7 +10,6 @@ import (
 
 var modelStorage storage.ModelStorage
 
-
 func StartStorage() {
 	modelStorage.Init()
 }
@@ -45,7 +44,7 @@ func GetAllModels() []models.Model {
 }
 
 // GetSingleModel return single model by modelType and instanceID
-func GetSingleModel(modelType enum.ModelType, instanceID uint32) (models.Model, error)  {
+func GetSingleModel(modelType enum.ModelType, instanceID uint32) (models.Model, error) {
 	for _, model := range modelStorage.Models {
 		if model.GetParams().Check(modelType, instanceID) {
 			return model, nil

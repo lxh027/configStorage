@@ -3,7 +3,7 @@ package raft
 type State uint8
 
 const (
-	Shutdown 	State = iota
+	Shutdown State = iota
 	Follower
 	Candidate
 	Leader

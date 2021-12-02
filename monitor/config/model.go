@@ -6,19 +6,18 @@ import (
 	"log"
 )
 
-
 type Model struct {
 	Save Save `yaml:"save"`
 	Log  Log  `yaml:"log"`
 }
 
 type Save struct {
-	Interval	uint32 	`yaml:"interval"`
-	Path 		string 	`yaml:"path"`
+	Interval uint32 `yaml:"interval"`
+	Path     string `yaml:"path"`
 }
 
 type Log struct {
-	Path 	string 	`yaml:"path"`
+	Path string `yaml:"path"`
 }
 
 var modelConfig Model
@@ -38,6 +37,3 @@ func init() {
 func GetModelConfig() Model {
 	return modelConfig
 }
-
-
-

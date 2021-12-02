@@ -11,13 +11,13 @@ import (
 
 // ModelStorage struct to store models and configs
 type ModelStorage struct {
-	Models 			[]models.Model
+	Models []models.Model
 	// interval to save models
-	saveInterval 	time.Duration
+	saveInterval time.Duration
 	// path prefix of models
-	modelPath 		string
+	modelPath string
 	// path prefix of logs
-	logPath 		string
+	logPath string
 }
 
 // Init init storage
@@ -53,6 +53,3 @@ func (m *ModelStorage) save() {
 		time.Sleep(m.saveInterval)
 	}
 }
-
-
-

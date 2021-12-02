@@ -6,7 +6,7 @@ import (
 )
 
 // registerRoutes to register controllers to routes
-func registerRoutes(router *gin.Engine)  {
+func registerRoutes(router *gin.Engine) {
 
 	router.StaticFS("/", http.Dir("./web/"))
 }

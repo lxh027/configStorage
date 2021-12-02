@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (raft *Raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs) (reply *api.RequestVoteReply, err error)  {
+func (raft *Raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs) (reply *api.RequestVoteReply, err error) {
 	raft.mu.Lock()
 	defer raft.mu.Unlock()
 
@@ -21,7 +21,7 @@ func (raft *Raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs) (r
 	if raft.currentIndex > 0 {
 		lastLogTerm := raft.logs[raft.currentIndex-1].Term
 		if lastLogTerm > args.LastLogTerm ||
-			(lastLogTerm == args.LastLogTerm && raft.logs[raft.currentIndex-1].Index > args.LastLogIndex){
+			(lastLogTerm == args.LastLogTerm && raft.logs[raft.currentIndex-1].Index > args.LastLogIndex) {
 			reply.VoteGranted = false
 			return reply, nil
 		}
@@ -38,7 +38,7 @@ func (raft *Raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs) (r
 	return reply, nil
 }
 
-func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs) (reply *api.AppendEntriesReply, err error)  {
+func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs) (reply *api.AppendEntriesReply, err error) {
 	raft.mu.Lock()
 	defer raft.mu.Unlock()
 
@@ -68,7 +68,7 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 	if args.PrevLogIndex != constants.NonLogIndex {
 		// can't match leader's state last entry index
 		if raft.currentIndex <= args.PrevLogIndex ||
-			raft.logs[args.PrevLogIndex].Term != args.PrevLogTerm{
+			raft.logs[args.PrevLogIndex].Term != args.PrevLogTerm {
 			reply.Success = false
 			return reply, nil
 		}
@@ -85,9 +85,9 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 				raft.logs = raft.logs[:log.Index]
 				for _, l := range args.Logs[i:] {
 					raft.logs = append(raft.logs, Log{
-						Entry: l.Entry,
-						Term: l.Term,
-						Index: l.Index,
+						Entry:  l.Entry,
+						Term:   l.Term,
+						Index:  l.Index,
 						Status: l.Status,
 					})
 				}
@@ -97,9 +97,9 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 			}
 		}
 		raft.logs = append(raft.logs, Log{
-			Entry: log.Entry,
-			Term: log.Term,
-			Index: log.Index,
+			Entry:  log.Entry,
+			Term:   log.Term,
+			Index:  log.Index,
 			Status: log.Status,
 		})
 		raft.currentIndex++
@@ -109,7 +109,7 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 
 	// follow leader's commit id
 	if args.LeaderCommitID > raft.commitIndex {
-		lastIndex := raft.currentIndex-1
+		lastIndex := raft.currentIndex - 1
 		if lastIndex < args.LeaderCommitID {
 			raft.commitIndex = lastIndex
 		} else {
@@ -124,7 +124,7 @@ func (raft *Raft) AppendEntries(ctx context.Context, args *api.AppendEntriesArgs
 }
 
 // NewEntry append a new entry to leader's log
-func (raft *Raft) NewEntry(ctx context.Context, args *api.NewEntryArgs) (reply *api.NewEntryReply, err error)  {
+func (raft *Raft) NewEntry(ctx context.Context, args *api.NewEntryArgs) (reply *api.NewEntryReply, err error) {
 	raft.mu.Lock()
 	defer raft.mu.Unlock()
 
@@ -137,36 +137,36 @@ func (raft *Raft) NewEntry(ctx context.Context, args *api.NewEntryArgs) (reply *
 	}
 
 	logIndex := raft.currentIndex
-	raft.currentIndex = raft.currentIndex+1
+	raft.currentIndex = raft.currentIndex + 1
 	// new log
 	log := Log{
-		Entry: args.Entry,
-		Term: raft.currentTerm,
-		Index: logIndex,
+		Entry:  args.Entry,
+		Term:   raft.currentTerm,
+		Index:  logIndex,
 		Status: true,
 	}
 	raft.logs = append(raft.logs, log)
 	raft.mu.Unlock()
 
 	// check 4 times, for total 2s
-	for i:=0; i<4; i++ {
+	for i := 0; i < 4; i++ {
 		time.Sleep(constants.NewEntryTimeout)
 		raft.mu.Lock()
 		// if commit index > log index and commit success
 		if raft.commitIndex >= logIndex && raft.logs[logIndex].Status == true {
-			reply.Success 	= true
-			reply.Msg 		= "ok"
+			reply.Success = true
+			reply.Msg = "ok"
 			return reply, nil
 		}
 		// commit fail
 		if raft.logs[logIndex].Status == false {
-			reply.Success 	= false
-			reply.Msg 		= "entry commit error"
+			reply.Success = false
+			reply.Msg = "entry commit error"
 			return reply, nil
 		}
 		raft.mu.Unlock()
 	}
-	reply.Success 	= false
-	reply.Msg		= "Timeout"
+	reply.Success = false
+	reply.Msg = "Timeout"
 	return reply, nil
 }

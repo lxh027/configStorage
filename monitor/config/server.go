@@ -7,21 +7,20 @@ import (
 )
 
 type Server struct {
-	Grpc 	Grpc 	`yaml:"grpc"`
-	Web 	Web		`yaml:"web"`
+	Grpc Grpc `yaml:"grpc"`
+	Web  Web  `yaml:"web"`
 }
 
 type Grpc struct {
-	Port 	uint32 	`yaml:"port"`
-	Host 	string 	`yaml:"host"`
+	Port uint32 `yaml:"port"`
+	Host string `yaml:"host"`
 }
 
 type Web struct {
-	Port 	uint32 	`yaml:"port"`
-	Host 	string 	`yaml:"host"`
-	Mode 	string 	`yaml:"mode"`
+	Port uint32 `yaml:"port"`
+	Host string `yaml:"host"`
+	Mode string `yaml:"mode"`
 }
-
 
 var serverConfig Server
 
@@ -40,4 +39,3 @@ func init() {
 func GetServerConfig() Server {
 	return serverConfig
 }
-

@@ -11,7 +11,7 @@ import (
 // save to file periodically
 type LogModel struct {
 	Params
-	logs	LogModelData
+	logs LogModelData
 }
 
 type LogModelData []string
@@ -20,9 +20,9 @@ type LogModelData []string
 func NewLogModel(instanceId uint32) *LogModel {
 	logModel := LogModel{
 		Params: Params{
-			ModelType: enum.Log,
+			ModelType:  enum.Log,
 			InstanceID: instanceId,
-			Title: "log",
+			Title:      "log",
 		},
 		logs: make(LogModelData, 0),
 	}
@@ -56,11 +56,10 @@ func (model *LogModel) This() interface{} {
 	return model
 }
 
-func (model *LogModel) GetParams() *Params  {
+func (model *LogModel) GetParams() *Params {
 	return &model.Params
 }
 
 func (model *LogModel) GetData() interface{} {
 	return model.logs
 }
-
