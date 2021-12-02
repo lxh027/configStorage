@@ -9,6 +9,7 @@ import (
 	"storage/config"
 	constants "storage/constants/raft"
 	"storage/helper/logger"
+	"time"
 )
 
 // NewRaftInstance start a new Raft instance and return a pointer
@@ -66,6 +67,9 @@ func NewRaftInstance() *Raft {
 	// start raft
 	go rf.startRaft()
 
+	// report status periodically
+	go rf.reportStatus()
+
 	return &rf
 }
 
@@ -103,5 +107,19 @@ func (raft *Raft) startRaft() {
 			cancel()
 			return
 		}
+	}
+}
+
+// reportStatus add log to see instance's status
+func (raft *Raft) reportStatus() {
+	for {
+		raft.mu.Lock()
+		if raft.state == constants.Shutdown {
+			raft.mu.Unlock()
+			return
+		}
+		logger.Printf("{ term: %d, index: %d }", raft.currentTerm, raft.currentIndex)
+		raft.mu.Unlock()
+		time.Sleep(constants.StatusLoggerTimeout)
 	}
 }
