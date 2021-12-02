@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"google.golang.org/grpc"
 	"storage/api"
 	"storage/constants/raft"
 	"sync"
@@ -12,6 +13,8 @@ type Raft struct {
 	api.UnimplementedRaftServer
 	api.UnimplementedStateServer
 
+	// rpc server
+	rpcServer *grpc.Server
 	// mutex
 	mu sync.Mutex
 
@@ -19,6 +22,9 @@ type Raft struct {
 	id int32
 
 	leaderID int32
+
+	// peers is raft peer instance's host and port
+	peers []peer
 
 	// params to indicate instance status
 	// currentTerm is term id of the instance
@@ -44,6 +50,13 @@ type Raft struct {
 		nextIndex  map[int32]int32
 		matchIndex map[int32]int32
 	}
+}
+
+// peer is the net location of raft peer instance
+type peer struct {
+	id   int32
+	host string
+	port string
 }
 
 // Log is the command sent by client

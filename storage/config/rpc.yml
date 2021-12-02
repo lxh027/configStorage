@@ -1,0 +1,20 @@
+raft_rpc:
+  id: 1
+  host: localhost
+  port: 2001
+raft_peers:
+  -
+    id: 1
+    host: localhost
+    port: 2001
+  -
+    id: 2
+    host: localhost
+    port: 2002
+  -
+    id: 3
+    host: localhost
+    port: 2003
+monitor_rpc:
+  host: localhost
+  port: 5000
