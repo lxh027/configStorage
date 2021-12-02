@@ -1,5 +1,10 @@
 package logger
 
+/**
+to add prefix and suffix for raft instance's log
+TODO upload logs to monitor
+*/
+
 import (
 	"log"
 	"storage/config"
