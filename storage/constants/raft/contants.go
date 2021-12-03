@@ -5,3 +5,8 @@ const (
 
 	NonLogIndex = -1
 )
+
+const (
+	Success = true
+	Fail    = false
+)

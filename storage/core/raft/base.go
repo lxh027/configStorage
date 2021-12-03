@@ -19,7 +19,7 @@ func NewRaftInstance() *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
-		peers:        make([]peer, 0),
+		peers:        make([]api.RaftClient, len(rpcConfig.RaftPeers)),
 		currentTerm:  0,
 		currentIndex: 0,
 		commitIndex:  0,
@@ -38,23 +38,15 @@ func NewRaftInstance() *Raft {
 		},
 	}
 
-	for _, p := range rpcConfig.RaftPeers {
-		rf.peers = append(rf.peers, peer{
-			id:   p.ID,
-			host: p.Host,
-			port: p.Port,
-		})
-	}
-
 	// start rpc server
 	address := fmt.Sprintf("%s:%s", rpcConfig.RaftRpc.Host, rpcConfig.RaftRpc.Port)
 	l, err := net.Listen("tcp", address)
 	if err != nil {
 		logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
-	var opts []grpc.ServerOption
+	var sOpts []grpc.ServerOption
 
-	rf.rpcServer = grpc.NewServer(opts...)
+	rf.rpcServer = grpc.NewServer(sOpts...)
 	api.RegisterRaftServer(rf.rpcServer, &rf)
 	err = rf.rpcServer.Serve(l)
 	if err != nil {
@@ -62,7 +54,28 @@ func NewRaftInstance() *Raft {
 	}
 	logger.Printf("Serve rpc success at %s", address)
 
-	// TODO test peer's state, only if half of the peers' rpc is served, can operations continue wo work
+	logger.Printf("waiting for peers' rpc server to start up")
+	time.Sleep(constants.StartUpTimeout)
+
+	var cOpts []grpc.DialOption
+	failNum := 0
+	for _, p := range rpcConfig.RaftPeers {
+		if p.ID != rf.id {
+			serverAddr := fmt.Sprintf("%s:%s", p.Host, p.Port)
+			conn, err := grpc.Dial(serverAddr, cOpts...)
+			if err != nil {
+				logger.Printf("open connection with id %d error, addr: %s", p.ID, serverAddr)
+				failNum++
+				continue
+			}
+			client := api.NewRaftClient(conn)
+			rf.peers[p.ID] = client
+		}
+	}
+	if failNum > len(rpcConfig.RaftPeers) {
+		rf.Kill()
+		logger.Fatalf("over half of the peer client is closed")
+	}
 
 	// start raft
 	go rf.startRaft()

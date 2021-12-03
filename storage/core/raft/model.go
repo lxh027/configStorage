@@ -24,7 +24,7 @@ type Raft struct {
 	leaderID int32
 
 	// peers is raft peer instance's host and port
-	peers []peer
+	peers []api.RaftClient
 
 	// params to indicate instance status
 	// currentTerm is term id of the instance
@@ -50,13 +50,6 @@ type Raft struct {
 		nextIndex  map[int32]int32
 		matchIndex map[int32]int32
 	}
-}
-
-// peer is the net location of raft peer instance
-type peer struct {
-	id   int32
-	host string
-	port string
 }
 
 // Log is the command sent by client
