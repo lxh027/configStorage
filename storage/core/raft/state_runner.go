@@ -38,7 +38,7 @@ func (raft *Raft) candidate(ctx context.Context) {
 
 func (raft *Raft) leader(ctx context.Context) {
 	logger.Printf("start state ad leader")
-	var heartbeatOk bool = false
+	var heartbeatOk = false
 	rentDue := make(chan struct{})
 
 	go func() {
