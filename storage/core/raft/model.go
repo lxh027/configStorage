@@ -3,7 +3,9 @@ package raft
 import (
 	"google.golang.org/grpc"
 	"storage/api"
+	"storage/config"
 	"storage/constants/raft"
+	"storage/helper/logger"
 	"sync"
 )
 
@@ -12,6 +14,12 @@ type Raft struct {
 	// rpc server implementation
 	api.UnimplementedRaftServer
 	api.UnimplementedStateServer
+
+	// logger
+	logger *logger.Logger
+
+	// configs
+	cfg config.RpcConfig
 
 	// rpc server
 	rpcServer *grpc.Server

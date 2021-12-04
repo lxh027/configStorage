@@ -13,9 +13,7 @@ import (
 )
 
 // NewRaftInstance start a new Raft instance and return a pointer
-func NewRaftInstance() *Raft {
-	rpcConfig := config.GetRpcConfig()
-
+func NewRaftInstance(rpcConfig config.RpcConfig) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
@@ -27,8 +25,10 @@ func NewRaftInstance() *Raft {
 		votedFor:     constants.UnVoted,
 		heartbeat:    false,
 		state:        constants.Follower,
-		stateChange:  make(chan constants.State),
+		stateChange:  make(chan constants.State, 1),
 		logs:         make([]Log, 0),
+		logger:       logger.NewLogger(rpcConfig.RaftRpc.ID),
+		cfg:          rpcConfig,
 		leaderState: struct {
 			nextIndex  map[int32]int32
 			matchIndex map[int32]int32
@@ -42,29 +42,34 @@ func NewRaftInstance() *Raft {
 	address := fmt.Sprintf("%s:%s", rpcConfig.RaftRpc.Host, rpcConfig.RaftRpc.Port)
 	l, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Fatalf("Start rpc server error: %v", err.Error())
+		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
 	var sOpts []grpc.ServerOption
 
 	rf.rpcServer = grpc.NewServer(sOpts...)
 	api.RegisterRaftServer(rf.rpcServer, &rf)
-	err = rf.rpcServer.Serve(l)
-	if err != nil {
-		logger.Fatalf("Server rpc error: %v", err.Error())
-	}
-	logger.Printf("Serve rpc success at %s", address)
 
-	logger.Printf("waiting for peers' rpc server to start up")
+	go func() {
+		err = rf.rpcServer.Serve(l)
+	}()
+	if err != nil {
+		rf.logger.Fatalf("Server rpc error: %v", err.Error())
+	}
+	rf.logger.Printf("Serve rpc success at %s", address)
+
+	rf.logger.Printf("waiting for peers' rpc server to start up")
 	time.Sleep(constants.StartUpTimeout)
 
-	var cOpts []grpc.DialOption
+	cOpts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
 	failNum := 0
 	for _, p := range rpcConfig.RaftPeers {
 		if p.ID != rf.id {
 			serverAddr := fmt.Sprintf("%s:%s", p.Host, p.Port)
 			conn, err := grpc.Dial(serverAddr, cOpts...)
 			if err != nil {
-				logger.Printf("open connection with id %d error, addr: %s", p.ID, serverAddr)
+				rf.logger.Printf("open connection with id %d error, addr: %s, error: %v", p.ID, serverAddr, err.Error())
 				failNum++
 				continue
 			}
@@ -72,13 +77,16 @@ func NewRaftInstance() *Raft {
 			rf.peers[p.ID] = client
 		}
 	}
-	if failNum > len(rpcConfig.RaftPeers) {
-		rf.Kill()
-		logger.Fatalf("over half of the peer client is closed")
+	if failNum > len(rpcConfig.RaftPeers)/2 {
+		//rf.Kill()
+		rf.logger.Fatalf("over half of the peer client is closed")
 	}
 
 	// start raft
 	go rf.startRaft()
+
+	// set state
+	rf.stateChange <- constants.Follower
 
 	// report status periodically
 	go rf.reportStatus()
@@ -91,6 +99,35 @@ func (raft *Raft) Kill() {
 	raft.state = constants.Shutdown
 	raft.stateChange <- constants.Shutdown
 	raft.rpcServer.GracefulStop()
+}
+
+func (raft *Raft) Restart(host string, port string) {
+	address := fmt.Sprintf("%s:%s", host, port)
+	l, err := net.Listen("tcp", address)
+	if err != nil {
+		raft.logger.Fatalf("Start rpc server error: %v", err.Error())
+	}
+	var sOpts []grpc.ServerOption
+
+	raft.rpcServer = grpc.NewServer(sOpts...)
+	api.RegisterRaftServer(raft.rpcServer, raft)
+	go func() {
+		err = raft.rpcServer.Serve(l)
+	}()
+	if err != nil {
+		raft.logger.Fatalf("Server rpc error: %v", err.Error())
+	}
+	raft.logger.Printf("restart Serve rpc success at %s", address)
+	// start raft
+	go raft.startRaft()
+
+	// set state
+	raft.stateChange <- constants.Follower
+	raft.state = constants.Follower
+
+	// report status periodically
+	go raft.reportStatus()
+
 }
 
 // IsKilled check the instance is killed
@@ -106,7 +143,7 @@ func (raft *Raft) startRaft() {
 	ctx, cancel = context.WithCancel(context.Background())
 	for {
 		state = <-raft.stateChange
-		logger.Printf("state changed")
+		raft.logger.Printf("state changed")
 		cancel()
 		ctx, cancel = context.WithCancel(context.Background())
 		switch state {
@@ -131,8 +168,27 @@ func (raft *Raft) reportStatus() {
 			raft.mu.Unlock()
 			return
 		}
-		logger.Printf("{ term: %d, index: %d }", raft.currentTerm, raft.currentIndex)
+		raft.logger.Printf("{ state: %v, term: %d, index: %d }", raft.state, raft.currentTerm, raft.currentIndex)
 		raft.mu.Unlock()
 		time.Sleep(constants.StatusLoggerTimeout)
 	}
 }
+
+/*func (raft *Raft) getConn(id int) *grpc.ClientConn {
+	raft.mu.Lock()
+	defer raft.mu.Unlock()
+	if raft.peers[id] == nil || raft.peers[id].GetState() != connectivity.Ready{
+		cOpts := []grpc.DialOption{
+			grpc.WithInsecure(),
+		}
+		serverAddr := fmt.Sprintf("%s:%s", raft.cfg.RaftPeers[id].Host, raft.cfg.RaftPeers[id].Port)
+
+		conn, err := grpc.Dial(serverAddr, cOpts...)
+		if err != nil {
+			raft.logger.Printf("reconnection with id %d error, addr: %s, error: %v", id, serverAddr, err.Error())
+		}
+		_ = raft.peers[id].Close()
+		raft.peers[id] = conn
+	}
+	return raft.peers[id]
+}*/

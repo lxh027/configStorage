@@ -5,17 +5,15 @@ import (
 	"storage/api"
 	constants "storage/constants/raft"
 	"storage/helper"
-	"storage/helper/logger"
-	"sync"
 	"time"
 )
 
 func (raft *Raft) follower(ctx context.Context) {
-	logger.Printf("start state as follower")
+	raft.logger.Printf("start state as follower")
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Printf("finish state as follower")
+			raft.logger.Printf("finish state as follower")
 			return
 		default:
 			raft.loopFollower()
@@ -24,11 +22,11 @@ func (raft *Raft) follower(ctx context.Context) {
 }
 
 func (raft *Raft) candidate(ctx context.Context) {
-	logger.Printf("start state ad candidate")
+	raft.logger.Printf("start state ad candidate")
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Printf("finish state as candidate")
+			raft.logger.Printf("finish state as candidate")
 			return
 		default:
 			raft.loopCandidate()
@@ -37,7 +35,7 @@ func (raft *Raft) candidate(ctx context.Context) {
 }
 
 func (raft *Raft) leader(ctx context.Context) {
-	logger.Printf("start state ad leader")
+	raft.logger.Printf("start state ad leader")
 	var heartbeatOk = false
 	rentDue := make(chan struct{})
 
@@ -62,10 +60,10 @@ func (raft *Raft) leader(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Printf("finish state as leader")
+			raft.logger.Printf("finish state as leader")
 			return
 		case <-rentDue:
-			logger.Printf("rent is due as a leader")
+			raft.logger.Printf("rent is due as a leader")
 			raft.mu.Lock()
 			raft.state = constants.Follower
 			raft.stateChange <- constants.Follower
@@ -78,7 +76,6 @@ func (raft *Raft) leader(ctx context.Context) {
 }
 
 func (raft *Raft) loopFollower() {
-	defer raft.mu.Unlock()
 	raft.mu.Lock()
 	// reset info as a follower
 	raft.votedFor = constants.UnVoted
@@ -100,23 +97,22 @@ func (raft *Raft) loopFollower() {
 }
 
 func (raft *Raft) loopCandidate() {
-	defer raft.mu.Unlock()
 	raft.mu.Lock()
 
 	if raft.state != constants.Candidate ||
 		(raft.votedFor != raft.id && raft.votedFor != constants.UnVoted) {
+		raft.mu.Unlock()
 		return
 	}
 
+	raft.votedFor = raft.id
 	peersNum := cap(raft.peers)
-	wg := sync.WaitGroup{}
-	wg.Add((peersNum + 1) / 2)
 	success := make(chan struct{})
+	finish := make(chan struct{}, 1)
 	raft.mu.Unlock()
 
 	go func() {
 		raft.mu.Lock()
-		defer raft.mu.Unlock()
 		for i, peer := range raft.peers {
 			if i != int(raft.id) {
 				args := api.RequestVoteArgs{
@@ -131,13 +127,13 @@ func (raft *Raft) loopCandidate() {
 				}
 				// send rpc request for votes
 				go func(peerIndex int, peer api.RaftClient, args *api.RequestVoteArgs) {
-					defer raft.mu.Unlock()
 					reply, err := peer.RequestVote(context.Background(), args)
 					if err != nil {
-						logger.Printf("fail to send rpc request to id %d: %v", peerIndex, err.Error())
+						raft.logger.Printf("fail to send rpc request to id %d: %v", peerIndex, err.Error())
 						return
 					}
 					raft.mu.Lock()
+					defer raft.mu.Unlock()
 					if reply.Term > raft.currentTerm {
 						raft.currentTerm = reply.Term
 						raft.state = constants.Follower
@@ -145,24 +141,33 @@ func (raft *Raft) loopCandidate() {
 						raft.stateChange <- constants.Follower
 						return
 					}
-					raft.mu.Unlock()
 					if reply.VoteGranted {
-						logger.Printf("receive vote from peer %d", peerIndex)
-						wg.Done()
+						raft.logger.Printf("receive vote from peer %d", peerIndex)
+						finish <- struct{}{}
 						return
 					}
 				}(i, peer, &args)
 			}
 		}
 		raft.mu.Unlock()
-		wg.Wait()
-		close(success)
+		cnt := peersNum / 2
+		for {
+			select {
+			case <-finish:
+				cnt--
+				if cnt <= 0 {
+					close(success)
+					return
+				}
+			}
+		}
 	}()
 
 	select {
 	case <-success:
 		raft.mu.Lock()
 		if raft.state != constants.Candidate {
+			raft.mu.Unlock()
 			return
 		}
 		raft.currentTerm++
@@ -176,6 +181,7 @@ func (raft *Raft) loopCandidate() {
 	case <-time.After(helper.RandomTimeout(constants.ElectionTimeout, 0)):
 		raft.mu.Lock()
 		if raft.state != constants.Candidate {
+			raft.mu.Unlock()
 			return
 		}
 		raft.votedFor = constants.UnVoted
@@ -189,7 +195,6 @@ func (raft *Raft) loopCandidate() {
 // loopLeader main func when state is leader
 // return true if successfully contact all the other peers
 func (raft *Raft) loopLeader() bool {
-	defer raft.mu.Unlock()
 	raft.mu.Lock()
 	n := raft.commitIndex + 1
 	peersNum := cap(raft.peers)
@@ -213,12 +218,11 @@ func (raft *Raft) loopLeader() bool {
 	raft.mu.Unlock()
 
 	// TODO persist
-	wg := sync.WaitGroup{}
-	wg.Add((peersNum + 1) / 2)
-	var success chan struct{}
+
+	success := make(chan struct{})
+	finish := make(chan struct{}, 1)
 	go func() {
 		raft.mu.Lock()
-		defer raft.mu.Unlock()
 		for index, peer := range raft.peers {
 			if index == int(raft.id) {
 				continue
@@ -245,11 +249,20 @@ func (raft *Raft) loopLeader() bool {
 					})
 				}
 			}
-			go raft.callAppendEntries(index, peer, &args, true, &wg)
+			go raft.callAppendEntries(index, peer, &args, true, finish)
 		}
 		raft.mu.Unlock()
-		wg.Wait()
-		close(success)
+		cnt := peersNum / 2
+		for {
+			select {
+			case <-finish:
+				cnt--
+				if cnt <= 0 {
+					close(success)
+					return
+				}
+			}
+		}
 	}()
 
 	var heartbeatOk bool
@@ -263,13 +276,13 @@ func (raft *Raft) loopLeader() bool {
 			return false
 		}
 		raft.mu.Unlock()
-		timeout := helper.RandomTimeout(constants.AppendEntriesDuration, 0)
-		time.Sleep(timeout)
 	}
+	timeout := helper.RandomTimeout(constants.AppendEntriesDuration, 0)
+	time.Sleep(timeout)
 	return heartbeatOk
 }
 
-func (raft *Raft) callAppendEntries(i int, client api.RaftClient, args *api.AppendEntriesArgs, first bool, wg *sync.WaitGroup) {
+func (raft *Raft) callAppendEntries(i int, peer api.RaftClient, args *api.AppendEntriesArgs, first bool, ch chan struct{}) {
 	raft.mu.Lock()
 	defer raft.mu.Unlock()
 	// mem leader state
@@ -280,15 +293,15 @@ func (raft *Raft) callAppendEntries(i int, client api.RaftClient, args *api.Appe
 	}
 
 	raft.mu.Unlock()
-	reply, err := client.AppendEntries(context.Background(), args)
+	reply, err := peer.AppendEntries(context.Background(), args)
+	raft.mu.Lock()
 	if err != nil {
-		logger.Printf("can't contact instance %d through heartbeat", i)
+		raft.logger.Printf("can't contact instance %d through heartbeat", i)
 		return
 	}
 	if first {
-		wg.Done()
+		ch <- struct{}{}
 	}
-	raft.mu.Lock()
 	if reply.Term > raft.currentTerm {
 		raft.state = constants.Follower
 		raft.stateChange <- constants.Follower
@@ -334,6 +347,5 @@ func (raft *Raft) callAppendEntries(i int, client api.RaftClient, args *api.Appe
 			})
 		}
 	}
-	raft.mu.Unlock()
-	go raft.callAppendEntries(i, client, newArgs, false, wg)
+	go raft.callAppendEntries(i, peer, newArgs, false, ch)
 }

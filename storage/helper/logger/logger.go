@@ -7,7 +7,6 @@ TODO upload logs to monitor
 
 import (
 	"log"
-	"storage/config"
 )
 
 const (
@@ -15,20 +14,26 @@ const (
 	suffix = "\n"
 )
 
-var raftID int32
-
-func init() {
-	raftID = config.GetRpcConfig().RaftRpc.ID
+type Logger struct {
+	raftID int32
 }
 
-func Printf(format string, v ...interface{}) {
-	log.Printf(prefix+format+suffix, raftID, v)
+func NewLogger(id int32) *Logger {
+	logger := Logger{raftID: id}
+	return &logger
 }
 
-func Panicf(format string, v ...interface{}) {
-	log.Panicf(prefix+format+suffix, raftID, v)
+func (logger *Logger) Printf(format string, v ...interface{}) {
+	v = append([]interface{}{logger.raftID}, v...)
+	log.Printf(prefix+format+suffix, v...)
 }
 
-func Fatalf(format string, v ...interface{}) {
-	log.Fatalf(prefix+format+suffix, raftID, v)
+func (logger *Logger) Panicf(format string, v ...interface{}) {
+	v = append([]interface{}{logger.raftID}, v...)
+	log.Panicf(prefix+format+suffix, v...)
+}
+
+func (logger *Logger) Fatalf(format string, v ...interface{}) {
+	v = append([]interface{}{logger.raftID}, v...)
+	log.Fatalf(prefix+format+suffix, v...)
 }
