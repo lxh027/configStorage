@@ -3,7 +3,7 @@ package fsm
 // StateMachine implementation of state machine
 type StateMachine struct {
 	// data a alice of data
-	data []Type
+	data TypeMap
 
 	// commit is a copy of the latest commit
 	commit commit
@@ -14,24 +14,22 @@ type StateMachine struct {
 
 type commit struct {
 	id   string
-	data []Type
+	data TypeMap
 }
 
 type Operation struct {
 	Name  OperationName
 	Path  []string
-	Value interface{}
+	Value Type
 }
 
 type machinery interface {
-	New(operation Operation) error
-	Remove(operation Operation) error
-	Set(operation Operation) error
-	Get(operation Operation) (Type, error)
-	Snapshot() commit
+	Operation(order string) error
+	Get(path []string) interface{}
 
-	Commit() error
+	// TODO Snapshot
+	// Snapshot() commit
+
+	Commit() string
 	Rollback(id string) error
-
-	orderToOperation(ops string) (Operation, error)
 }
