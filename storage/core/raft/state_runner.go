@@ -5,6 +5,7 @@ import (
 	"storage/api"
 	constants "storage/constants/raft"
 	"storage/helper"
+	"sync"
 	"time"
 )
 
@@ -151,12 +152,19 @@ func (raft *Raft) loopCandidate() {
 		}
 		raft.mu.Unlock()
 		cnt := peersNum / 2
+		tot := peersNum - 1
+		once := sync.Once{}
 		for {
 			select {
 			case <-finish:
 				cnt--
+				tot--
 				if cnt <= 0 {
-					close(success)
+					once.Do(func() {
+						close(success)
+					})
+				}
+				if tot <= 0 {
 					return
 				}
 			}
@@ -253,12 +261,19 @@ func (raft *Raft) loopLeader() bool {
 		}
 		raft.mu.Unlock()
 		cnt := peersNum / 2
+		tot := peersNum - 1
+		once := sync.Once{}
 		for {
 			select {
 			case <-finish:
 				cnt--
+				tot--
 				if cnt <= 0 {
-					close(success)
+					once.Do(func() {
+						close(success)
+					})
+				}
+				if tot <= 0 {
 					return
 				}
 			}
