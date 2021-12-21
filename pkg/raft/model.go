@@ -1,25 +1,24 @@
 package raft
 
 import (
+	"configStorage/api/raftrpc"
+	"configStorage/pkg/config"
+	"configStorage/pkg/logger"
 	"google.golang.org/grpc"
-	"storage/api"
-	"storage/config"
-	"storage/constants/raft"
-	"storage/helper/logger"
 	"sync"
 )
 
 // Raft object to implement raft state
 type Raft struct {
 	// rpc server implementation
-	api.UnimplementedRaftServer
-	api.UnimplementedStateServer
+	raftrpc.UnimplementedRaftServer
+	raftrpc.UnimplementedStateServer
 
 	// logger
 	logger *logger.Logger
 
 	// configs
-	cfg config.RpcConfig
+	cfg config.Raft
 
 	// rpc server
 	rpcServer *grpc.Server
@@ -32,7 +31,7 @@ type Raft struct {
 	leaderID int32
 
 	// peers is raft peer instance's host and port
-	peers []api.RaftClient
+	peers []raftrpc.RaftClient
 
 	// params to indicate instance status
 	// currentTerm is term id of the instance
@@ -49,8 +48,8 @@ type Raft struct {
 	heartbeat bool
 
 	// state for the instance
-	state       raft.State
-	stateChange chan raft.State
+	state       State
+	stateChange chan State
 
 	logs []Log
 	// leaderState when the instance become leader, to record followers' state to maintain leadership

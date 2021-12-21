@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "lxh027/configStorage/storage/api";
+option go_package = "lxh027/configStorage/api/raft";
 
 service raft {
   // candidate request vote rpc

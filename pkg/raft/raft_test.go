@@ -1,9 +1,8 @@
 package raft
 
 import (
+	"configStorage/pkg/config"
 	"log"
-	"storage/config"
-	constants "storage/constants/raft"
 	"testing"
 	"time"
 )
@@ -26,14 +25,16 @@ func makeRaft() {
 	rafts = make([]*Raft, 3)
 	for i := 0; i < instanceNum; i++ {
 		go func(i int) {
-			var cfg config.RpcConfig
+			var cfg config.Raft
 			cfg.RaftRpc = rpcConfigs[i]
 			cfg.RaftPeers = rpcConfigs
+			cfg.LogPrefix = "[raft id: %v]"
 			rafts[i] = NewRaftInstance(cfg)
+			rafts[i].Start()
 		}(i)
 	}
 
-	time.Sleep(constants.StartUpTimeout)
+	time.Sleep(StartUpTimeout)
 }
 
 func TestLeaderElection(t *testing.T) {
@@ -42,7 +43,7 @@ func TestLeaderElection(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	ld := 0
 	for i := 0; i < instanceNum; i++ {
-		if rafts[i].state == constants.Leader {
+		if rafts[i].state == Leader {
 			ld++
 		}
 	}
@@ -92,7 +93,7 @@ func TestReelection(t *testing.T) {
 	// kill leader
 	var ld int
 	for i, raft := range rafts {
-		if raft.state == constants.Leader {
+		if raft.state == Leader {
 			ld = i
 			raft.Kill()
 			break
@@ -103,7 +104,7 @@ func TestReelection(t *testing.T) {
 
 	cnt := 0
 	for i := 0; i < instanceNum; i++ {
-		if rafts[i].state == constants.Leader {
+		if rafts[i].state == Leader {
 			cnt++
 		}
 	}
@@ -138,25 +139,25 @@ func TestReelection(t *testing.T) {
 	}
 }
 
-func (raft *Raft) appendLog(entry []byte) bool {
-	raft.mu.Lock()
-	defer raft.mu.Unlock()
+func (rf *Raft) appendLog(entry []byte) bool {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 
-	if raft.state != constants.Leader {
+	if rf.state != Leader {
 		return false
 	}
 
-	logIndex := raft.currentIndex
-	raft.currentIndex = raft.currentIndex + 1
+	logIndex := rf.currentIndex
+	rf.currentIndex = rf.currentIndex + 1
 	// new log
-	log := Log{
+	l := Log{
 		Entry:  entry,
-		Term:   raft.currentTerm,
+		Term:   rf.currentTerm,
 		Index:  logIndex,
 		Status: true,
 	}
-	raft.logs = append(raft.logs, log)
-	raft.logger.Printf("new log entry at term %d index %d", log.Term, log.Index)
+	rf.logs = append(rf.logs, l)
+	rf.logger.Printf("new log entry at term %d index %d", l.Term, l.Index)
 	return true
 
 }

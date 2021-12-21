@@ -3,6 +3,23 @@ package raft
 import "time"
 
 const (
+	UnVoted     = -1
+	NonLogIndex = -1
+
+	Success = true
+	Fail    = false
+)
+
+type State uint8
+
+const (
+	Shutdown State = iota
+	Follower
+	Candidate
+	Leader
+)
+
+const (
 	// StartUpTimeout waiting for other client to start
 	StartUpTimeout = time.Second * 2
 	// NewEntryTimeout 500ms for 4 times
