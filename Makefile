@@ -16,3 +16,6 @@ run:
 	nohup ./"${RAFT_PEER}" -env dev -id 0 >>1.log &
 	nohup ./"${RAFT_PEER}" -env dev -id 1 >>2.log &
 	nohup ./"${RAFT_PEER}" -env dev -id 2 >>3.log &
+
+clean:
+	rm ./"${RAFT_PEER}"
