@@ -1,8 +1,0 @@
-
-grpc:
-  host: localhost
-  port: 5555
-web:
-  host: localhost
-  port: 5556
-  mode: debug

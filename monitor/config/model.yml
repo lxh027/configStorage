@@ -1,7 +1,0 @@
-
-save:
-  interval: 1000
-  path: /home/monitor/storage
-
-log:
-  path: /home/monitor/log

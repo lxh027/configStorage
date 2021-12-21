@@ -18,6 +18,7 @@ func NewStateMachine() *StateMachine {
 
 // Operation do an operation
 // parse operation first, then make data do the change
+// format: operation type path value
 func (sm *StateMachine) Operation(order string) error {
 	// parse operation
 	operation, err := strToOp(order)
@@ -88,10 +89,10 @@ func (t *TypeMap) new(path []string, value Type) error {
 		return ErrWrongArgs
 	}
 	// at the last point of path
-	if len(path) == 0 {
+	if len(path) == 1 {
 		// check for conflict
 		for _, item := range t.Value {
-			if item.GetKey() == path[0] {
+			if item.GetKey() == value.GetKey() {
 				return ErrItemExisted
 			}
 		}
@@ -210,10 +211,10 @@ func strToOp(order string) (Operation, error) {
 	}
 
 	path := strings.Split(keys[2], ".")
-
-	typeMap := TypeMap{Key: path[l-1], Value: make([]Type, 0)}
-	typeArray := TypeArray{Key: path[l-1], Value: make([]string, 0)}
-	typeString := TypeString{Key: path[l-1], Value: ""}
+	pathL := len(path)
+	typeMap := TypeMap{Key: path[pathL-1], Value: make([]Type, 0)}
+	typeArray := TypeArray{Key: path[pathL-1], Value: make([]string, 0)}
+	typeString := TypeString{Key: path[pathL-1], Value: ""}
 	// get value
 	switch tp {
 	case Map:
