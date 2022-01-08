@@ -13,3 +13,8 @@ func Timeout(fixDuration time.Duration, randDuration time.Duration) time.Duratio
 	d := r.Int63n(randDuration.Milliseconds())
 	return time.Duration(d)*time.Millisecond + fixDuration
 }
+
+func ID(idRange int) int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r.Intn(idRange - 1)
+}

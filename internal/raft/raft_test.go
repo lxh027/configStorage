@@ -1,28 +1,38 @@
 package raft
 
 import (
-	"configStorage/pkg/config"
+	"configStorage/internal/config"
 	"log"
 	"testing"
 	"time"
 )
 
 var rpcConfigs []config.Rpc
+var clientConfig ClientConfig
 
 const instanceNum = 3
 
 func init() {
 	rpcConfigs = []config.Rpc{
-		{ID: 0, Host: "localhost", Port: "2000"},
-		{ID: 1, Host: "localhost", Port: "2001"},
-		{ID: 2, Host: "localhost", Port: "2002"},
+		{ID: 0, Host: "localhost", Port: "2000", CPort: "3000"},
+		{ID: 1, Host: "localhost", Port: "2001", CPort: "3001"},
+		{ID: 2, Host: "localhost", Port: "2002", CPort: "3002"},
+	}
+
+	clientConfig = ClientConfig{
+		size: instanceNum,
+		addresses: []string{
+			"localhost:3000",
+			"localhost:3001",
+			"localhost:3002",
+		},
 	}
 }
 
 var rafts []*Raft
 
 func makeRaft() {
-	rafts = make([]*Raft, 3)
+	rafts = make([]*Raft, instanceNum)
 	for i := 0; i < instanceNum; i++ {
 		go func(i int) {
 			var cfg config.Raft
@@ -35,6 +45,37 @@ func makeRaft() {
 	}
 
 	time.Sleep(StartUpTimeout)
+}
+
+func TestStorage(t *testing.T) {
+	makeRaft()
+	time.Sleep(5 * time.Second)
+	client := NewRaftClient(clientConfig)
+	client.Set("key1", "value")
+	client.Set("key2", "value2")
+	client.Set("key4", "value4")
+	client.Set("key5", "value5")
+	time.Sleep(NewEntryTimeout)
+
+	client.Get("key1")
+	client.Get("key2")
+	client.Get("key3")
+	client.Get("key4")
+	client.Get("key5")
+
+	client.Set("key5", "v  kajsgalue2")
+	time.Sleep(NewEntryTimeout)
+	client.Get("key5")
+
+	client.Del("key1")
+	client.Del("key5")
+	time.Sleep(NewEntryTimeout)
+
+	client.Get("key5")
+
+	for i := 0; i < instanceNum; i++ {
+		rafts[i].Kill()
+	}
 }
 
 func TestLeaderElection(t *testing.T) {

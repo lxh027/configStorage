@@ -3,12 +3,15 @@ raft_peers:
     id: 0
     host: localhost
     port: 2001
+    c_port: 1001
   -
     id: 1
     host: localhost
     port: 2002
+    c_port: 1002
   -
     id: 2
     host: localhost
     port: 2003
+    c_port: 1003
 log_prefix: '[raft id: %v]: '

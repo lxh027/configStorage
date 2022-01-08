@@ -2,12 +2,13 @@ package raft
 
 import (
 	"configStorage/api/raftrpc"
-	"configStorage/pkg/config"
+	"configStorage/internal/config"
 	"configStorage/pkg/logger"
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -19,8 +20,8 @@ func NewRaftInstance(rpcConfig config.Raft) *Raft {
 		peers:        make([]raftrpc.RaftClient, len(rpcConfig.RaftPeers)),
 		currentTerm:  0,
 		currentIndex: 0,
-		commitIndex:  0,
-		lastApplied:  0,
+		commitIndex:  -1,
+		lastApplied:  -1,
 		votedFor:     UnVoted,
 		heartbeat:    false,
 		state:        Follower,
@@ -28,6 +29,7 @@ func NewRaftInstance(rpcConfig config.Raft) *Raft {
 		logs:         make([]Log, 0),
 		logger:       logger.NewLogger([]interface{}{rpcConfig.RaftRpc.ID}, rpcConfig.LogPrefix),
 		cfg:          rpcConfig,
+		storage:      NewRaftStorage(),
 		leaderState: struct {
 			nextIndex  map[int32]int32
 			matchIndex map[int32]int32
@@ -47,10 +49,28 @@ func (rf *Raft) Start() {
 	if err != nil {
 		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
+
+	c_address := fmt.Sprintf("%s:%s", rf.cfg.RaftRpc.Host, rf.cfg.RaftRpc.CPort)
+	cl, err := net.Listen("tcp", c_address)
+	if err != nil {
+		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
+	}
 	var sOpts []grpc.ServerOption
 
 	rf.rpcServer = grpc.NewServer(sOpts...)
 	raftrpc.RegisterRaftServer(rf.rpcServer, rf)
+
+	var cOpts []grpc.ServerOption
+	rf.stateServer = grpc.NewServer(cOpts...)
+	raftrpc.RegisterStateServer(rf.stateServer, rf)
+
+	// state server start
+	go func() {
+		err1 := rf.stateServer.Serve(cl)
+		if err1 != nil {
+			rf.logger.Fatalf("Start rpc server error: %v", err1.Error())
+		}
+	}()
 
 	go func() {
 		rf.logger.Printf("waiting for peers' rpc server to start up")
@@ -81,6 +101,7 @@ func (rf *Raft) Start() {
 		// start raft
 		go rf.startRaft()
 
+		go rf.checkCommit()
 		// set state
 		rf.stateChange <- Follower
 
@@ -97,9 +118,12 @@ func (rf *Raft) Start() {
 
 // Kill to kill the raft instance
 func (rf *Raft) Kill() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	rf.state = Shutdown
 	rf.stateChange <- Shutdown
 	rf.rpcServer.GracefulStop()
+	rf.stateServer.GracefulStop()
 }
 
 func (rf *Raft) Restart(host string, port string) {
@@ -172,6 +196,49 @@ func (rf *Raft) reportStatus() {
 		rf.logger.Printf("{ state: %v, term: %d, index: %d }", rf.state, rf.currentTerm, rf.currentIndex)
 		rf.mu.Unlock()
 		time.Sleep(StatusLoggerTimeout)
+	}
+}
+
+func (rf *Raft) checkCommit() {
+	for {
+		rf.mu.Lock()
+		if rf.state == Shutdown {
+			rf.mu.Unlock()
+			return
+		}
+		if rf.lastApplied < rf.commitIndex {
+			for i, log := range rf.logs {
+				if log.Index > rf.lastApplied && log.Index <= rf.commitIndex {
+					command := string(log.Entry)
+					words := strings.Split(command, " ")
+					if words[0] == "set" {
+						if len(words) <= 2 {
+							rf.logger.Printf("entry format error")
+							rf.logs[i].Status = false
+						}
+						key := words[1]
+						value := strings.Join(words[2:], " ")
+						rf.storage.Set(key, value)
+					} else if words[0] == "del" {
+						if len(words) != 2 {
+							rf.logger.Printf("entry format error")
+							rf.logs[i].Status = false
+						}
+						key := words[1]
+						if rf.storage.Del(key) != nil {
+							rf.logger.Printf("error del value, %v", command)
+							rf.logs[i].Status = false
+						}
+					} else {
+						rf.logger.Printf("entry format error")
+						rf.logs[i].Status = false
+					}
+					rf.lastApplied = log.Index
+				}
+			}
+		}
+		rf.mu.Unlock()
+		time.Sleep(NewEntryTimeout)
 	}
 }
 

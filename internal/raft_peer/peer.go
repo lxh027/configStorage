@@ -1,8 +1,8 @@
 package raft_peer
 
 import (
-	"configStorage/pkg/config"
-	"configStorage/pkg/raft"
+	"configStorage/internal/config"
+	"configStorage/internal/raft"
 	"path"
 )
 

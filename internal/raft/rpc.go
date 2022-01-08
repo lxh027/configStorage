@@ -72,6 +72,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 	rf.currentTerm = args.Term
 	rf.votedFor = UnVoted
 	rf.heartbeat = true
+	rf.leaderID = args.LeaderID
 
 	if args.PrevLogIndex != NonLogIndex {
 		// can't match leader's state last entry index
@@ -181,5 +182,12 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 	rf.logger.Printf("log %d process timeout", log.Index)
 	reply.Success = false
 	reply.Msg = "Timeout"
+	return reply, nil
+}
+
+func (rf *Raft) GetValue(ctx context.Context, args *raftrpc.GetValueArgs) (reply *raftrpc.GetValueReply, err error) {
+	reply = &raftrpc.GetValueReply{}
+	v, err := rf.storage.Get(args.GetKey())
+	reply.Value = v
 	return reply, nil
 }

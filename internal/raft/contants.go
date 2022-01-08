@@ -1,6 +1,9 @@
 package raft
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	UnVoted     = -1
@@ -41,3 +44,7 @@ const (
 	// RandTimeout a random timeout as a suffix
 	RandTimeout = time.Millisecond * 300
 )
+
+type StorageError error
+
+var KeyNotFoundErr StorageError = errors.New("key not found")

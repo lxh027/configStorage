@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "lxh027/configStorage/api/raft";
+option go_package = "lxh027/configStorage/api/raftrpc";
 
 service raft {
   // candidate request vote rpc
@@ -12,6 +12,8 @@ service raft {
 service state {
   // receive log reply
   rpc NewEntry(NewEntryArgs) returns ( NewEntryReply );
+  // return key value
+  rpc GetValue(GetValueArgs) returns (GetValueReply);
 }
 
 
@@ -53,7 +55,15 @@ message NewEntryArgs {
 }
 
 message NewEntryReply {
-  bool success  = 1;
-  string msg    = 2;
-  int32 leaderID = 3;
+  bool Success  = 1;
+  string Msg    = 2;
+  int32 LeaderID = 3;
+}
+
+message GetValueArgs {
+  string Key = 1;
+}
+
+message GetValueReply {
+  string Value = 1;
 }

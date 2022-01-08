@@ -2,7 +2,7 @@ package raft
 
 import (
 	"configStorage/api/raftrpc"
-	"configStorage/pkg/config"
+	"configStorage/internal/config"
 	"configStorage/pkg/logger"
 	"google.golang.org/grpc"
 	"sync"
@@ -20,8 +20,13 @@ type Raft struct {
 	// configs
 	cfg config.Raft
 
+	// storage
+	storage Storage
+
 	// rpc server
 	rpcServer *grpc.Server
+	// resServer
+	stateServer *grpc.Server
 	// mutex
 	mu sync.Mutex
 

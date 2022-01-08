@@ -7,9 +7,10 @@ import (
 )
 
 type Rpc struct {
-	ID   int32  `yaml:"id"`
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	ID    int32  `yaml:"id"`
+	Host  string `yaml:"host"`
+	Port  string `yaml:"port"`
+	CPort string `yaml:"c_port"`
 }
 
 type Raft struct {

@@ -146,6 +146,8 @@ var Raft_ServiceDesc = grpc.ServiceDesc{
 type StateClient interface {
 	// receive log reply
 	NewEntry(ctx context.Context, in *NewEntryArgs, opts ...grpc.CallOption) (*NewEntryReply, error)
+	// return key value
+	GetValue(ctx context.Context, in *GetValueArgs, opts ...grpc.CallOption) (*GetValueReply, error)
 }
 
 type stateClient struct {
@@ -165,12 +167,23 @@ func (c *stateClient) NewEntry(ctx context.Context, in *NewEntryArgs, opts ...gr
 	return out, nil
 }
 
+func (c *stateClient) GetValue(ctx context.Context, in *GetValueArgs, opts ...grpc.CallOption) (*GetValueReply, error) {
+	out := new(GetValueReply)
+	err := c.cc.Invoke(ctx, "/state/GetValue", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StateServer is the server API for State service.
 // All implementations must embed UnimplementedStateServer
 // for forward compatibility
 type StateServer interface {
 	// receive log reply
 	NewEntry(context.Context, *NewEntryArgs) (*NewEntryReply, error)
+	// return key value
+	GetValue(context.Context, *GetValueArgs) (*GetValueReply, error)
 	mustEmbedUnimplementedStateServer()
 }
 
@@ -180,6 +193,9 @@ type UnimplementedStateServer struct {
 
 func (UnimplementedStateServer) NewEntry(context.Context, *NewEntryArgs) (*NewEntryReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NewEntry not implemented")
+}
+func (UnimplementedStateServer) GetValue(context.Context, *GetValueArgs) (*GetValueReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValue not implemented")
 }
 func (UnimplementedStateServer) mustEmbedUnimplementedStateServer() {}
 
@@ -212,6 +228,24 @@ func _State_NewEntry_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _State_GetValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValueArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StateServer).GetValue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/state/GetValue",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StateServer).GetValue(ctx, req.(*GetValueArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // State_ServiceDesc is the grpc.ServiceDesc for State service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -222,6 +256,10 @@ var State_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NewEntry",
 			Handler:    _State_NewEntry_Handler,
+		},
+		{
+			MethodName: "GetValue",
+			Handler:    _State_GetValue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

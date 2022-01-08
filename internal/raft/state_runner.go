@@ -36,7 +36,7 @@ func (rf *Raft) candidate(ctx context.Context) {
 
 func (rf *Raft) leader(ctx context.Context) {
 	rf.logger.Printf("start state ad leader")
-	var heartbeatOk = false
+	heartbeatOk := make(chan struct{})
 	rentDue := make(chan struct{})
 
 	go func() {
@@ -46,11 +46,10 @@ func (rf *Raft) leader(ctx context.Context) {
 		for {
 			select {
 			case <-time.After(LeaderRentTimeout):
-				if !heartbeatOk {
-					close(rentDue)
-					return
-				}
-				heartbeatOk = false
+				close(rentDue)
+				return
+			case <-heartbeatOk:
+				continue
 			case <-ctx.Done():
 				return
 			}
@@ -70,7 +69,9 @@ func (rf *Raft) leader(ctx context.Context) {
 			rf.mu.Unlock()
 			return
 		default:
-			heartbeatOk = rf.loopLeader()
+			if rf.loopLeader() {
+				heartbeatOk <- struct{}{}
+			}
 		}
 	}
 }
