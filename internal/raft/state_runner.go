@@ -122,9 +122,9 @@ func (rf *Raft) loopCandidate() {
 					LastLogIndex: 0,
 					LastLogTerm:  0,
 				}
-				if rf.currentIndex > 0 {
-					args.LastLogIndex = rf.logs[rf.currentIndex-1].Index
-					args.LastLogTerm = rf.logs[rf.currentIndex-1].Term
+				if len(rf.logs) > 0 {
+					args.LastLogIndex = rf.logs[len(rf.logs)-1].Index
+					args.LastLogTerm = rf.logs[len(rf.logs)-1].Term
 				}
 				// send rpc request for votes
 				go func(peerIndex int, peer raftrpc.RaftClient, args *raftrpc.RequestVoteArgs) {
@@ -204,23 +204,30 @@ func (rf *Raft) loopCandidate() {
 // return true if successfully contact all the other peers
 func (rf *Raft) loopLeader() bool {
 	rf.mu.Lock()
-	n := rf.commitIndex + 1
+	n := 0
+	for i, log := range rf.logs {
+		if log.Index == rf.commitIndex {
+			n = i
+			break
+		}
+	}
 	peersNum := cap(rf.peers)
 	// append commit
-	for n >= 0 && n < rf.currentIndex {
+	for n < len(rf.logs) && rf.logs[n].Index < rf.currentIndex {
 		if rf.logs[n].Term != rf.currentTerm {
+			n++
 			continue
 		}
 		success := peersNum / 2
 		for _, peerCommit := range rf.leaderState.matchIndex {
-			if peerCommit >= n {
+			if peerCommit >= rf.logs[n].Index {
 				success--
 			}
 		}
 		if success > 0 {
 			break
 		}
-		rf.commitIndex = n
+		rf.commitIndex = rf.logs[n].Index
 		n++
 	}
 	rf.mu.Unlock()
@@ -243,12 +250,20 @@ func (rf *Raft) loopLeader() bool {
 				Logs:           make([]*raftrpc.Log, 0),
 				LeaderCommitID: rf.commitIndex,
 			}
-			if rf.leaderState.nextIndex[int32(index)] != 0 {
-				args.PrevLogTerm = rf.logs[rf.leaderState.nextIndex[int32(index)]-1].Term
-				args.PrevLogIndex = rf.logs[rf.leaderState.nextIndex[int32(index)]-1].Index
+			idx := 0
+			for i, log := range rf.logs {
+				if log.Index == rf.leaderState.nextIndex[int32(index)] {
+					idx = i
+					break
+				}
+			}
+			if idx != 0 {
+				args.PrevLogTerm = rf.logs[idx].Term
+				args.PrevLogIndex = rf.logs[idx].Index
 			}
 			if rf.leaderState.nextIndex[int32(index)] < rf.currentIndex {
-				for _, l := range rf.logs[rf.leaderState.nextIndex[int32(index)]:] {
+
+				for _, l := range rf.logs[idx:] {
 					args.Logs = append(args.Logs, &raftrpc.Log{
 						Term:   l.Term,
 						Index:  l.Index,

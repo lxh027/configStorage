@@ -19,10 +19,10 @@ func (rf *Raft) RequestVote(ctx context.Context, args *raftrpc.RequestVoteArgs) 
 		return reply, nil
 	}
 
-	if rf.currentIndex > 0 {
-		lastLogTerm := rf.logs[rf.currentIndex-1].Term
+	if len(rf.logs) > 0 {
+		lastLogTerm := rf.logs[len(rf.logs)-1].Term
 		if lastLogTerm > args.LastLogTerm ||
-			(lastLogTerm == args.LastLogTerm && rf.logs[rf.currentIndex-1].Index > args.LastLogIndex) {
+			(lastLogTerm == args.LastLogTerm && rf.logs[len(rf.logs)-1].Index > args.LastLogIndex) {
 			rf.logger.Printf("candidate's logs are older then mine, deny it")
 			reply.VoteGranted = false
 			return reply, nil
@@ -58,7 +58,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 		// and inform the leader's lost by add term id
 		if rf.currentTerm == args.Term {
 			rf.logger.Printf("deny leader's heartbeat for start a new round of election")
-			reply.Term = rf.currentIndex + 1
+			reply.Term = rf.currentTerm + 1
 			reply.Success = false
 			return reply, nil
 		}
@@ -90,8 +90,8 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 		}
 		if rf.currentIndex > log.Index {
 			// term not match, follow leader's logs
-			if rf.logs[log.Index].Term != log.Term {
-				rf.logs = rf.logs[:log.Index]
+			if rf.logs[i].Term != log.Term {
+				rf.logs = rf.logs[:i]
 				for _, l := range args.Logs[i:] {
 					rf.logs = append(rf.logs, Log{
 						Entry:  l.Entry,
@@ -114,7 +114,9 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 		rf.currentIndex++
 	}
 
-	rf.currentIndex = int32(len(rf.logs))
+	if len(rf.logs) > 0 {
+		rf.currentIndex = rf.logs[len(rf.logs)-1].Index + 1
+	}
 
 	// follow leader's commit id
 	if args.LeaderCommitID > rf.commitIndex {

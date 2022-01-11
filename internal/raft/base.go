@@ -253,7 +253,7 @@ func (rf *Raft) checkCommit() {
 }
 
 func (rf *Raft) persist() {
-	rf.logger.Printf("persist raft status")
+	//rf.logger.Printf("persist raft status")
 	w := new(bytes.Buffer)
 	e := labgob.NewEncoder(w)
 	e.Encode(rf.commitIndex)
