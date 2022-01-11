@@ -4,6 +4,8 @@ type Storage interface {
 	Get(string) (string, error)
 	Set(string, string)
 	Del(string) error
+	Load(*map[string]string)
+	Copy() map[string]string
 }
 
 type rfStorage struct {
@@ -15,6 +17,14 @@ func NewRaftStorage() Storage {
 		make(map[string]string),
 	}
 	return &s
+}
+
+func (s *rfStorage) Copy() map[string]string {
+	return s.storage
+}
+
+func (s *rfStorage) Load(data *map[string]string) {
+	s.storage = *data
 }
 
 func (s *rfStorage) Get(key string) (string, error) {

@@ -33,8 +33,8 @@ func (rf *Raft) RequestVote(ctx context.Context, args *raftrpc.RequestVoteArgs) 
 		rf.logger.Printf("voted for instance %d", args.CandidateID)
 		rf.votedFor = args.CandidateID
 		reply.VoteGranted = true
-		// TODO: persist
-
+		// persist
+		rf.persist()
 		return reply, nil
 	}
 	reply.VoteGranted = false
@@ -126,8 +126,8 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 		}
 	}
 
-	// TODO persist
-
+	// persist
+	rf.persist()
 	reply.Success = true
 	return reply, nil
 }

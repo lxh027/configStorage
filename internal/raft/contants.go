@@ -48,3 +48,4 @@ const (
 type StorageError error
 
 var KeyNotFoundErr StorageError = errors.New("key not found")
+var CopyDataErr StorageError = errors.New("copy data error")

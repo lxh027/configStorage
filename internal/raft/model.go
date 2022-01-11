@@ -17,6 +17,9 @@ type Raft struct {
 	// logger
 	logger *logger.Logger
 
+	// persister
+	persister *Persister
+
 	// configs
 	cfg config.Raft
 
