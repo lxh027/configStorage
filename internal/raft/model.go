@@ -2,7 +2,6 @@ package raft
 
 import (
 	"configStorage/api/raftrpc"
-	"configStorage/internal/config"
 	"configStorage/pkg/logger"
 	"google.golang.org/grpc"
 	"sync"
@@ -21,7 +20,7 @@ type Raft struct {
 	persister *Persister
 
 	// configs
-	cfg config.Raft
+	cfg Config
 
 	// storage
 	storage Storage

@@ -1,4 +1,4 @@
-package config
+package raft
 
 import (
 	"fmt"
@@ -13,18 +13,18 @@ type Rpc struct {
 	CPort string `yaml:"c_port"`
 }
 
-type Raft struct {
+type Config struct {
 	RaftRpc   Rpc    `yaml:"raft_rpc"`
 	RaftPeers []Rpc  `yaml:"raft_peers"`
 	LogPrefix string `yaml:"log_prefix"`
 }
 
-func NewRaftRpcConfig(path string) Raft {
+func NewRaftRpcConfig(path string) Config {
 	config, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(fmt.Sprintf("fail to read config file from %v. err: %v", path, err.Error()))
 	}
-	var raft Raft
+	var raft Config
 	err = yaml.Unmarshal(config, &raft)
 	if err != nil {
 		panic(fmt.Sprintf("fail to parse config file from %v, err: %v", path, err.Error()))

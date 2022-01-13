@@ -3,7 +3,6 @@ package raft
 import (
 	"bytes"
 	"configStorage/api/raftrpc"
-	"configStorage/internal/config"
 	"configStorage/pkg/logger"
 	"context"
 	"fmt"
@@ -15,7 +14,7 @@ import (
 )
 
 // NewRaftInstance start a new Raft instance and return a pointer
-func NewRaftInstance(rpcConfig config.Raft) *Raft {
+func NewRaftInstance(rpcConfig Config) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
@@ -277,6 +276,7 @@ func (rf *Raft) snapshot() {
 	for i, log := range rf.logs {
 		if log.Index >= rf.lastApplied {
 			rf.logs = rf.logs[i:]
+			break
 		}
 	}
 }
@@ -314,7 +314,7 @@ func (rf *Raft) readPersist() {
 	rf.storage.Load(&sp)
 }
 
-/*func (raft *Raft) getConn(id int) *grpc.ClientConn {
+/*func (raft *Config) getConn(id int) *grpc.ClientConn {
 	raft.mu.Lock()
 	defer raft.mu.Unlock()
 	if raft.peers[id] == nil || raft.peers[id].GetState() != connectivity.Ready{

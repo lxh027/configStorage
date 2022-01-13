@@ -1,19 +1,18 @@
 package raft
 
 import (
-	"configStorage/internal/config"
 	"log"
 	"testing"
 	"time"
 )
 
-var rpcConfigs []config.Rpc
+var rpcConfigs []Rpc
 var clientConfig ClientConfig
 
 const instanceNum = 3
 
 func init() {
-	rpcConfigs = []config.Rpc{
+	rpcConfigs = []Rpc{
 		{ID: 0, Host: "localhost", Port: "2000", CPort: "3000"},
 		{ID: 1, Host: "localhost", Port: "2001", CPort: "3001"},
 		{ID: 2, Host: "localhost", Port: "2002", CPort: "3002"},
@@ -35,7 +34,7 @@ func makeRaft() {
 	rafts = make([]*Raft, instanceNum)
 	for i := 0; i < instanceNum; i++ {
 		go func(i int) {
-			var cfg config.Raft
+			var cfg Config
 			cfg.RaftRpc = rpcConfigs[i]
 			cfg.RaftPeers = rpcConfigs
 			cfg.LogPrefix = "[raft id: %v]"
