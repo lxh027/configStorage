@@ -2,8 +2,14 @@
 
 RAFT_PEER=raft_peer
 SCHEDULER=scheduler
+PORT1=2001
+PORT2=2002
+PORT3=2003
+C_PORT1=3001
+C_PORT2=3002
+C_PORT3=3003
 
-all: check build
+all: check build-raft build-scheduler
 
 clean:
 	rm ./"${RAFT_PEER}"
@@ -23,16 +29,16 @@ check:
 
 build-raft:
 	@go mod tidy
-	@go build -o "${RAFT_PEER}" ./cmd/raft/main.go
+	@go build -o ./cmd/raft/"${RAFT_PEER}" ./cmd/raft/main.go
 
 run-raft:
-	nohup ./"${RAFT_PEER}" -env dev -id 0 >>1.log &
-	nohup ./"${RAFT_PEER}" -env dev -id 1 >>2.log &
-	nohup ./"${RAFT_PEER}" -env dev -id 2 >>3.log &
+	nohup ./cmd/raft/"${RAFT_PEER}" -env dev -raft-port ${PORT1} -client-port ${C_PORT1} >>logs/1.log &
+	nohup ./cmd/raft/"${RAFT_PEER}" -env dev -raft-port ${PORT2} -client-port ${C_PORT2} >>logs/2.log &
+	nohup ./cmd/raft/"${RAFT_PEER}" -env dev -raft-port ${PORT3} -client-port ${C_PORT3} >>logs/3.log &
 
 build-scheduler:
 	@go mod tidy
-	@go build -o "${SCHEDULER}" ./cmd/scheduler/main.go
+	@go build -o ./cmd/scheduler/"${SCHEDULER}" ./cmd/scheduler/main.go
 
 run-scheduler:
-	nohup ./"${SCHEDULER}" -env dev >> scheduler.log &
+	nohup ./cmd/scheduler/"${SCHEDULER}" -env dev >> logs/scheduler.log &
