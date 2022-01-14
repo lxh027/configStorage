@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "lxh027/configStorage/api/register";
+
+service registerRaft {
+  // register a new raft service
+  rpc RegisterRaft(RegisterRaftArgs) returns (RegisterRaftReply);
+
+  // get raft config
+  rpc GetRaftRegistrations(GetRaftRegistrationsArgs) returns (GetRaftRegistrationsReply);
+}
+
+message RegisterRaftArgs {
+  string Uid       = 1;
+  int64    RaftID  = 2;
+  string Host     = 3;
+  string RaftPort = 4;
+  string ClientPort = 5;
+}
+
+message RegisterRaftReply {
+  bool  OK  = 1;
+}
+
+message GetRaftRegistrationsArgs {
+  string Uid = 1;
+  int64 RaftID = 2;
+}
+
+message GetRaftRegistrationsReply {
+  bool  OK = 1;
+  bytes Config = 2;
+}

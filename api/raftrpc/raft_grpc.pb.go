@@ -137,7 +137,7 @@ var Raft_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "raft.proto",
+	Metadata: "api/raftrpc/raft.proto",
 }
 
 // StateClient is the client API for State service.
@@ -263,5 +263,5 @@ var State_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "raft.proto",
+	Metadata: "api/raftrpc/raft.proto",
 }
