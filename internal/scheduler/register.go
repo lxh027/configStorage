@@ -3,9 +3,12 @@ package scheduler
 import (
 	"configStorage/api/register"
 	"configStorage/internal/raft"
+	"configStorage/pkg/logger"
 	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc"
+	"net"
 	"sync"
 )
 
@@ -15,14 +18,15 @@ type RegisterCenter struct {
 
 	mu sync.Mutex
 
+	server *grpc.Server
+
 	// a simple storage interface with Get and Set functions
 	s Storage
 
-	// raft instances' num of raft cluster
-	raftSize int
+	// logger
+	logger *logger.Logger
 
-	// logPrefix
-	logPrefix string
+	cfg RegisterConfig
 }
 
 type raftCfg struct {
@@ -30,6 +34,33 @@ type raftCfg struct {
 	host       string
 	clientPort string
 	raftPort   string
+}
+
+func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
+	return &RegisterCenter{
+		s:      NewMapStorage(),
+		cfg:    config,
+		logger: logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
+	}
+}
+
+func (r *RegisterCenter) Start() {
+	address := fmt.Sprintf("%s:%s", r.cfg.Host, r.cfg.Port)
+	l, err := net.Listen("tcp", address)
+	if err != nil {
+		r.logger.Fatalf("Start rpc server error: %v", err.Error())
+	}
+	var sOpts []grpc.ServerOption
+
+	r.server = grpc.NewServer(sOpts...)
+	register.RegisterRegisterRaftServer(r.server, r)
+
+	r.logger.Printf("serving register center at %s:%s", r.cfg.Host, r.cfg.Port)
+
+	err = r.server.Serve(l)
+	if err != nil {
+		r.logger.Fatalf("Server rpc error: %v", err.Error())
+	}
 }
 
 func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.RegisterRaftArgs) (reply *register.RegisterRaftReply, err error) {
@@ -46,7 +77,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 		peerCnt = v.(int)
 	}
 	// raft cluster already full
-	if peerCnt == r.raftSize {
+	if peerCnt == r.cfg.Size {
 		return reply, RaftFullErr
 	}
 	// new raft peer
@@ -75,7 +106,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	defer r.mu.Unlock()
 
 	reply = &register.GetRaftRegistrationsReply{OK: false, Config: make([]byte, 0)}
-	cfg := raft.Config{LogPrefix: r.logPrefix}
+	cfg := raft.Config{LogPrefix: r.cfg.RaftLogPrefix}
 	cntKey := raftPeerCntKey(args.RaftID)
 	peerCnt := 0
 	if v, err := r.s.Get(cntKey); err != nil || v == nil {
@@ -85,11 +116,11 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	// not complete yet
-	if peerCnt != r.raftSize {
+	if peerCnt != r.cfg.Size {
 		return reply, nil
 	}
 
-	for idx := 0; idx < r.raftSize; idx++ {
+	for idx := 0; idx < r.cfg.Size; idx++ {
 		key := raftPeerInfoKey(idx, args.RaftID)
 		if v, err := r.s.Get(key); err != nil || v == nil {
 			return reply, GetDataErr

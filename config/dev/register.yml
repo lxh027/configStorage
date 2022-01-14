@@ -1,0 +1,5 @@
+host: localhost
+port: 3000
+size: 3
+raft-log-prefix: "[raft id %v]"
+log-prefix: "[register center]"
