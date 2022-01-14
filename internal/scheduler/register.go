@@ -76,6 +76,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	if v != nil {
 		peerCnt = v.(int)
 	}
+	r.logger.Printf("peer count: %v, target count: %v", peerCnt, r.cfg.Size)
 	// raft cluster already full
 	if peerCnt == r.cfg.Size {
 		return reply, RaftFullErr
@@ -140,10 +141,10 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	return reply, nil
 }
 
-func raftPeerInfoKey(id int, raftId int64) string {
-	return fmt.Sprintf("raft_peer_info_%d_%d", raftId, id)
+func raftPeerInfoKey(id int, raftId string) string {
+	return fmt.Sprintf("raft_peer_info_%s_%d", raftId, id)
 }
 
-func raftPeerCntKey(raftId int64) string {
-	return fmt.Sprintf("raft_peer_cnt_%d", raftId)
+func raftPeerCntKey(raftId string) string {
+	return fmt.Sprintf("raft_peer_cnt_%s", raftId)
 }

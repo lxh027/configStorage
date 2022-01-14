@@ -1,4 +1,6 @@
 .idea
+sh
+logs
 # Binaries for programs and plugins
 *.exe
 *.exe~

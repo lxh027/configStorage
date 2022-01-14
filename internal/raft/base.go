@@ -68,6 +68,7 @@ func (rf *Raft) Start() {
 
 	// state server start
 	go func() {
+		rf.logger.Printf("Serving client rpc at %s", c_address)
 		err1 := rf.stateServer.Serve(cl)
 		if err1 != nil {
 			rf.logger.Fatalf("Start rpc server error: %v", err1.Error())
