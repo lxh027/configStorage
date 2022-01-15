@@ -26,6 +26,7 @@ func main() {
 	p := path.Join("./config", env, "raft.yml")
 	raftConfig := raft.NewRaftRpcConfig(p)
 
+	// generate a uid for instance
 	uid := md5.GetRandomMd5()
 	fmt.Printf("uid: %v\n", uid)
 	args := register.RegisterRaftArgs{
@@ -53,6 +54,7 @@ func main() {
 		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, err.Error())
 	}
 
+	// make register center client
 	client := register.NewRegisterRaftClient(registerConn)
 
 	_, err = client.RegisterRaft(context.Background(), &args)
@@ -62,8 +64,10 @@ func main() {
 
 	log.Printf("wait for others to connect...\n")
 
+	// wait for other raft instances to register
 	time.Sleep(5 * time.Second)
 
+	// get raft registration
 	reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
 		Uid:    uid,
 		RaftID: raftConfig.RaftID,
@@ -79,7 +83,16 @@ func main() {
 		log.Fatalf("parse config error: %v", err.Error())
 	}
 
-	// TODO defer unregister
+	defer func(idx int64, raftID string, uid string) {
+		_, err = client.UnregisterRaft(context.Background(), &register.UnregisterRaftArgs{
+			Uid:    uid,
+			RaftID: raftID,
+			Idx:    idx,
+		})
+		if err != nil {
+			log.Printf("error occurs when unregister from center, err: %v", err.Error())
+		}
+	}(int64(cfg.RaftRpc.ID), raftConfig.RaftID, uid)
 
 	rafter := raft.NewRaftInstance(cfg)
 

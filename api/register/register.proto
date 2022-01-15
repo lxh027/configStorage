@@ -8,11 +8,14 @@ service registerRaft {
 
   // get raft config
   rpc GetRaftRegistrations(GetRaftRegistrationsArgs) returns (GetRaftRegistrationsReply);
+
+  // unregister raft service
+  rpc UnregisterRaft(UnregisterRaftArgs) returns (UnregisterRaftReply);
 }
 
 message RegisterRaftArgs {
-  string Uid       = 1;
-  string     RaftID  = 2;
+  string Uid      = 1;
+  string RaftID   = 2;
   string Host     = 3;
   string RaftPort = 4;
   string ClientPort = 5;
@@ -23,11 +26,21 @@ message RegisterRaftReply {
 }
 
 message GetRaftRegistrationsArgs {
-  string Uid = 1;
+  string Uid    = 1;
   string RaftID = 2;
 }
 
 message GetRaftRegistrationsReply {
-  bool  OK = 1;
-  bytes Config = 2;
+  bool  OK      = 1;
+  bytes Config  = 2;
+}
+
+message UnregisterRaftArgs {
+  string Uid    = 1;
+  string RaftID = 2;
+  int64  Idx    = 3;
+}
+
+message UnregisterRaftReply {
+
 }

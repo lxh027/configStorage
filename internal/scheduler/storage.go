@@ -3,6 +3,7 @@ package scheduler
 type Storage interface {
 	Get(string) (interface{}, error)
 	Set(string, interface{}) error
+	Del(string) error
 }
 
 type mapStorage struct {
@@ -19,5 +20,10 @@ func (ms *mapStorage) Get(key string) (interface{}, error) {
 
 func (ms *mapStorage) Set(key string, value interface{}) error {
 	ms.mp[key] = value
+	return nil
+}
+
+func (ms *mapStorage) Del(key string) error {
+	delete(ms.mp, key)
 	return nil
 }

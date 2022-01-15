@@ -102,6 +102,40 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	return reply, nil
 }
 
+func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.UnregisterRaftArgs) (reply *register.UnregisterRaftReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	reply = &register.UnregisterRaftReply{}
+
+	cntKey := raftPeerCntKey(args.RaftID)
+	key := raftPeerInfoKey(int(args.Idx), args.RaftID)
+	peerCnt := 0
+
+	v, err := r.s.Get(cntKey)
+	if err != nil {
+		return reply, GetDataErr
+	}
+	if v != nil {
+		peerCnt = v.(int)
+	}
+	r.logger.Printf("peer count: %v, target count: %v", peerCnt, r.cfg.Size)
+
+	// check if raft cluster is empty
+	if peerCnt <= 0 {
+		return reply, RaftEmptyErr
+	}
+
+	if r.s.Del(key) != nil {
+		return reply, DelDataErr
+	}
+
+	peerCnt--
+
+	_ = r.s.Set(cntKey, peerCnt)
+	return reply, nil
+}
+
 func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *register.GetRaftRegistrationsArgs) (reply *register.GetRaftRegistrationsReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

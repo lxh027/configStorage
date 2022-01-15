@@ -22,6 +22,8 @@ type RegisterRaftClient interface {
 	RegisterRaft(ctx context.Context, in *RegisterRaftArgs, opts ...grpc.CallOption) (*RegisterRaftReply, error)
 	// get raft config
 	GetRaftRegistrations(ctx context.Context, in *GetRaftRegistrationsArgs, opts ...grpc.CallOption) (*GetRaftRegistrationsReply, error)
+	// unregister raft service
+	UnregisterRaft(ctx context.Context, in *UnregisterRaftArgs, opts ...grpc.CallOption) (*UnregisterRaftReply, error)
 }
 
 type registerRaftClient struct {
@@ -50,6 +52,15 @@ func (c *registerRaftClient) GetRaftRegistrations(ctx context.Context, in *GetRa
 	return out, nil
 }
 
+func (c *registerRaftClient) UnregisterRaft(ctx context.Context, in *UnregisterRaftArgs, opts ...grpc.CallOption) (*UnregisterRaftReply, error) {
+	out := new(UnregisterRaftReply)
+	err := c.cc.Invoke(ctx, "/registerRaft/UnregisterRaft", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RegisterRaftServer is the server API for RegisterRaft service.
 // All implementations must embed UnimplementedRegisterRaftServer
 // for forward compatibility
@@ -58,6 +69,8 @@ type RegisterRaftServer interface {
 	RegisterRaft(context.Context, *RegisterRaftArgs) (*RegisterRaftReply, error)
 	// get raft config
 	GetRaftRegistrations(context.Context, *GetRaftRegistrationsArgs) (*GetRaftRegistrationsReply, error)
+	// unregister raft service
+	UnregisterRaft(context.Context, *UnregisterRaftArgs) (*UnregisterRaftReply, error)
 	mustEmbedUnimplementedRegisterRaftServer()
 }
 
@@ -70,6 +83,9 @@ func (UnimplementedRegisterRaftServer) RegisterRaft(context.Context, *RegisterRa
 }
 func (UnimplementedRegisterRaftServer) GetRaftRegistrations(context.Context, *GetRaftRegistrationsArgs) (*GetRaftRegistrationsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRaftRegistrations not implemented")
+}
+func (UnimplementedRegisterRaftServer) UnregisterRaft(context.Context, *UnregisterRaftArgs) (*UnregisterRaftReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnregisterRaft not implemented")
 }
 func (UnimplementedRegisterRaftServer) mustEmbedUnimplementedRegisterRaftServer() {}
 
@@ -120,6 +136,24 @@ func _RegisterRaft_GetRaftRegistrations_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RegisterRaft_UnregisterRaft_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnregisterRaftArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RegisterRaftServer).UnregisterRaft(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/registerRaft/UnregisterRaft",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RegisterRaftServer).UnregisterRaft(ctx, req.(*UnregisterRaftArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RegisterRaft_ServiceDesc is the grpc.ServiceDesc for RegisterRaft service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +168,10 @@ var RegisterRaft_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRaftRegistrations",
 			Handler:    _RegisterRaft_GetRaftRegistrations_Handler,
+		},
+		{
+			MethodName: "UnregisterRaft",
+			Handler:    _RegisterRaft_UnregisterRaft_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

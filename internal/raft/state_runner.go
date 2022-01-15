@@ -232,8 +232,6 @@ func (rf *Raft) loopLeader() bool {
 	}
 	rf.mu.Unlock()
 
-	// TODO persist
-
 	success := make(chan struct{})
 	finish := make(chan struct{}, 1)
 	go func() {
