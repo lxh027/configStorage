@@ -2,6 +2,7 @@
 
 RAFT_PEER=raft_peer
 SCHEDULER=scheduler
+ACCESSOR=accessor
 PORT1=2001
 PORT2=2002
 PORT3=2003
@@ -42,3 +43,10 @@ build-scheduler:
 
 run-scheduler:
 	nohup ./cmd/scheduler/"${SCHEDULER}" -env dev >> logs/scheduler.log &
+
+build-accessor:
+	@go mod tidy
+	@go build -o ./cmd/accessor/"${ACCESSOR}" ./cmd/accessor/main.go &
+
+run-accessor:
+	nohup ./cmd/accessor/"${ACCESSOR}" -env dev >> log/accessor.log &
