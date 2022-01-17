@@ -1,11 +1,17 @@
 package routes
 
 import (
+	"configStorage/internal/accessor/app/user"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func BackendRoutes(router *gin.Engine) {
+	usr := router.Group("user")
+	{
+		usr.POST("register", user.Register)
+		usr.POST("login", user.Login)
+		usr.POST("logout", user.Logout)
+	}
 
-	router.StaticFS("/admin", http.Dir("./web"))
+	//router.StaticFS("/admin", http.Dir("./web"))
 }

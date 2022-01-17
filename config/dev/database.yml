@@ -1,6 +1,6 @@
 host: 127.0.0.1
 port: 3306
-db_name: example
+db_name: config_storage
 username: root
 password: 19991107
 charset: utf8

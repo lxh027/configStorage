@@ -2,13 +2,14 @@ package main
 
 import (
 	"configStorage/internal/accessor"
+	"configStorage/internal/accessor/global"
 	"flag"
 )
 
 func main() {
 	defer func() {
-		_ = accessor.RedisClient.Client.Close()
-		db, _ := accessor.MysqlClient.DB()
+		_ = global.RedisClient.Client.Close()
+		db, _ := global.MysqlClient.DB()
 		_ = db.Close()
 	}()
 
@@ -17,6 +18,6 @@ func main() {
 	flag.StringVar(&env, "env", "dev", "配置环境")
 	flag.Parse()
 
-	accessor.Init(env)
+	global.Init(env)
 	accessor.Run()
 }
