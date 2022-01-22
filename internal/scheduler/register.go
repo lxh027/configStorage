@@ -23,10 +23,27 @@ type RegisterCenter struct {
 	// a simple storage interface with Get and Set functions
 	s Storage
 
+	// raftCluster
+	clusters map[string]raftCluster
+
+	// raftIds groups names' of raft cluster
+	raftIds []string
+
 	// logger
 	logger *logger.Logger
 
 	cfg RegisterConfig
+}
+
+type raftCluster struct {
+	// size of raft cluster
+	size int
+
+	// configs of raft cluster
+	raftCfg []raftCfg
+
+	// instances
+	instance map[string]raft.Client
 }
 
 type raftCfg struct {
@@ -38,9 +55,11 @@ type raftCfg struct {
 
 func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 	return &RegisterCenter{
-		s:      NewMapStorage(),
-		cfg:    config,
-		logger: logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
+		s:        NewMapStorage(),
+		cfg:      config,
+		logger:   logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
+		clusters: make(map[string]raftCluster),
+		raftIds:  make([]string, 0),
 	}
 }
 
@@ -67,21 +86,30 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	reply = &register.RegisterRaftReply{OK: false}
-	peerCnt := 0
-	cntKey := raftPeerCntKey(args.RaftID)
-	v, err := r.s.Get(cntKey)
-	if err != nil {
-		return reply, GetDataErr
+
+	var cluster raftCluster
+	ok := true
+	if cluster, ok = r.clusters[args.RaftID]; !ok {
+		cluster = raftCluster{
+			size:     0,
+			raftCfg:  make([]raftCfg, 0),
+			instance: make(map[string]raft.Client),
+		}
 	}
-	if v != nil {
-		peerCnt = v.(int)
-	}
-	r.logger.Printf("peer count: %v, target count: %v", peerCnt, r.cfg.Size)
-	// raft cluster already full
-	if peerCnt == r.cfg.Size {
+
+	r.logger.Printf("peer count: %v, target count: %v", cluster.size, r.cfg.Size)
+
+	// check if raft cluster is full
+	if cluster.size == r.cfg.Size {
 		return reply, RaftFullErr
 	}
-	// new raft peer
+
+	// check if uid is in cluster
+	for _, instance := range cluster.raftCfg {
+		if instance.uid == args.Uid {
+			return reply, RaftInstanceExistedErr
+		}
+	}
 
 	cfg := raftCfg{
 		uid:        args.Uid,
@@ -90,14 +118,15 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 		raftPort:   args.RaftPort,
 	}
 
-	key := raftPeerInfoKey(peerCnt, args.RaftID)
+	cluster.size++
+	cluster.raftCfg = append(cluster.raftCfg, cfg)
 
-	if r.s.Set(key, cfg) != nil {
-		return reply, SetDataErr
+	if !ok {
+		r.raftIds = append(r.raftIds, args.RaftID)
 	}
+	r.clusters[args.RaftID] = cluster
 
-	peerCnt++
-	_ = r.s.Set(cntKey, peerCnt)
+	// TODO persist cluster status
 	reply.OK = true
 	return reply, nil
 }
@@ -108,31 +137,41 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 
 	reply = &register.UnregisterRaftReply{}
 
-	cntKey := raftPeerCntKey(args.RaftID)
-	key := raftPeerInfoKey(int(args.Idx), args.RaftID)
-	peerCnt := 0
-
-	v, err := r.s.Get(cntKey)
-	if err != nil {
+	var cluster raftCluster
+	ok := true
+	// cluster not exist
+	if cluster, ok = r.clusters[args.RaftID]; !ok {
 		return reply, GetDataErr
 	}
-	if v != nil {
-		peerCnt = v.(int)
-	}
-	r.logger.Printf("peer count: %v, target count: %v", peerCnt, r.cfg.Size)
+
+	r.logger.Printf("peer count: %v, target count: %v", cluster.size, r.cfg.Size)
 
 	// check if raft cluster is empty
-	if peerCnt <= 0 {
+	if cluster.size <= 0 {
 		return reply, RaftEmptyErr
 	}
 
-	if r.s.Del(key) != nil {
-		return reply, DelDataErr
+	// check if raft id is existed
+	instanceId := -1
+	for id, instance := range cluster.raftCfg {
+		if instance.uid == args.Uid {
+			instanceId = id
+			break
+		}
 	}
 
-	peerCnt--
+	if instanceId == -1 {
+		return reply, RaftInstanceNotExistedErr
+	}
 
-	_ = r.s.Set(cntKey, peerCnt)
+	cluster.size--
+	cluster.raftCfg = append(cluster.raftCfg[:instanceId], cluster.raftCfg[instanceId+1:]...)
+
+	delete(cluster.instance, args.Uid)
+
+	r.clusters[args.RaftID] = cluster
+
+	// TODO persist cluster status
 	return reply, nil
 }
 
@@ -142,30 +181,24 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 
 	reply = &register.GetRaftRegistrationsReply{OK: false, Config: make([]byte, 0)}
 	cfg := raft.Config{LogPrefix: r.cfg.RaftLogPrefix}
-	cntKey := raftPeerCntKey(args.RaftID)
-	peerCnt := 0
-	if v, err := r.s.Get(cntKey); err != nil || v == nil {
+
+	var cluster raftCluster
+	ok := true
+	// cluster not exist
+	if cluster, ok = r.clusters[args.RaftID]; !ok {
 		return reply, GetDataErr
-	} else {
-		peerCnt = v.(int)
 	}
 
 	// not complete yet
-	if peerCnt != r.cfg.Size {
+	if cluster.size != r.cfg.Size {
 		return reply, nil
 	}
 
-	for idx := 0; idx < r.cfg.Size; idx++ {
-		key := raftPeerInfoKey(idx, args.RaftID)
-		if v, err := r.s.Get(key); err != nil || v == nil {
-			return reply, GetDataErr
-		} else {
-			peerCfg := v.(raftCfg)
-			rpc := raft.Rpc{ID: int32(idx), Host: peerCfg.host, Port: peerCfg.raftPort, CPort: peerCfg.clientPort}
-			cfg.RaftPeers = append(cfg.RaftPeers, rpc)
-			if peerCfg.uid == args.Uid {
-				cfg.RaftRpc = rpc
-			}
+	for idx, instance := range cluster.raftCfg {
+		rpc := raft.Rpc{ID: int32(idx), Host: instance.host, Port: instance.raftPort, CPort: instance.clientPort}
+		cfg.RaftPeers = append(cfg.RaftPeers, rpc)
+		if instance.uid == args.Uid {
+			cfg.RaftRpc = rpc
 		}
 	}
 
@@ -173,12 +206,4 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	reply.OK = true
 	reply.Config = byteData
 	return reply, nil
-}
-
-func raftPeerInfoKey(id int, raftId string) string {
-	return fmt.Sprintf("raft_peer_info_%s_%d", raftId, id)
-}
-
-func raftPeerCntKey(raftId string) string {
-	return fmt.Sprintf("raft_peer_cnt_%s", raftId)
 }
