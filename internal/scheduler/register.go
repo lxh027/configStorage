@@ -29,6 +29,12 @@ type RegisterCenter struct {
 	// raftIds groups names' of raft cluster
 	raftIds []string
 
+	// storage namespace
+	namespace namespace
+
+	// size raft cluster number
+	size int
+
 	// logger
 	logger *logger.Logger
 
@@ -53,6 +59,12 @@ type raftCfg struct {
 	raftPort   string
 }
 
+type namespace struct {
+	name       string
+	raftId     string
+	privateKey string
+}
+
 func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 	return &RegisterCenter{
 		s:        NewMapStorage(),
@@ -60,6 +72,7 @@ func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 		logger:   logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
 		clusters: make(map[string]raftCluster),
 		raftIds:  make([]string, 0),
+		size:     0,
 	}
 }
 
@@ -123,6 +136,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 
 	if !ok {
 		r.raftIds = append(r.raftIds, args.RaftID)
+		r.size++
 	}
 	r.clusters[args.RaftID] = cluster
 
@@ -168,7 +182,7 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	cluster.raftCfg = append(cluster.raftCfg[:instanceId], cluster.raftCfg[instanceId+1:]...)
 
 	delete(cluster.instance, args.Uid)
-
+	// TODO delete raft cluster size
 	r.clusters[args.RaftID] = cluster
 
 	// TODO persist cluster status
