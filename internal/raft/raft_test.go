@@ -19,8 +19,8 @@ func init() {
 	}
 
 	clientConfig = ClientConfig{
-		size: instanceNum,
-		addresses: []string{
+		Size: instanceNum,
+		Addresses: []string{
 			"localhost:3000",
 			"localhost:3001",
 			"localhost:3002",

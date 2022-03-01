@@ -10,11 +10,14 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"sync"
+	"time"
 )
 
 // RegisterCenter is the center of raft addresses' registrations
 type RegisterCenter struct {
 	register.UnimplementedRegisterRaftServer
+
+	register.UnimplementedKvStorageServer
 
 	mu sync.Mutex
 
@@ -24,13 +27,13 @@ type RegisterCenter struct {
 	s Storage
 
 	// raftCluster
-	clusters map[string]raftCluster
+	clusters map[string]*raftCluster
 
 	// raftIds groups names' of raft cluster
 	raftIds []string
 
 	// storage namespace
-	namespace namespace
+	namespace map[string]namespace
 
 	// size raft cluster number
 	size int
@@ -42,6 +45,8 @@ type RegisterCenter struct {
 }
 
 type raftCluster struct {
+	once sync.Once
+
 	// size of raft cluster
 	size int
 
@@ -49,7 +54,7 @@ type raftCluster struct {
 	raftCfg []raftCfg
 
 	// instances
-	instance map[string]raft.Client
+	client raft.Client
 }
 
 type raftCfg struct {
@@ -60,7 +65,6 @@ type raftCfg struct {
 }
 
 type namespace struct {
-	name       string
 	raftId     string
 	privateKey string
 }
@@ -70,7 +74,7 @@ func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 		s:        NewMapStorage(),
 		cfg:      config,
 		logger:   logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
-		clusters: make(map[string]raftCluster),
+		clusters: make(map[string]*raftCluster),
 		raftIds:  make([]string, 0),
 		size:     0,
 	}
@@ -100,13 +104,12 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	defer r.mu.Unlock()
 	reply = &register.RegisterRaftReply{OK: false}
 
-	var cluster raftCluster
+	var cluster *raftCluster
 	ok := true
 	if cluster, ok = r.clusters[args.RaftID]; !ok {
-		cluster = raftCluster{
-			size:     0,
-			raftCfg:  make([]raftCfg, 0),
-			instance: make(map[string]raft.Client),
+		cluster = &raftCluster{
+			size:    0,
+			raftCfg: make([]raftCfg, 0),
 		}
 	}
 
@@ -151,7 +154,7 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 
 	reply = &register.UnregisterRaftReply{}
 
-	var cluster raftCluster
+	var cluster *raftCluster
 	ok := true
 	// cluster not exist
 	if cluster, ok = r.clusters[args.RaftID]; !ok {
@@ -181,7 +184,6 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	cluster.size--
 	cluster.raftCfg = append(cluster.raftCfg[:instanceId], cluster.raftCfg[instanceId+1:]...)
 
-	delete(cluster.instance, args.Uid)
 	// TODO delete raft cluster size
 	r.clusters[args.RaftID] = cluster
 
@@ -196,7 +198,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	reply = &register.GetRaftRegistrationsReply{OK: false, Config: make([]byte, 0)}
 	cfg := raft.Config{LogPrefix: r.cfg.RaftLogPrefix}
 
-	var cluster raftCluster
+	var cluster *raftCluster
 	ok := true
 	// cluster not exist
 	if cluster, ok = r.clusters[args.RaftID]; !ok {
@@ -207,6 +209,11 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	if cluster.size != r.cfg.Size {
 		return reply, nil
 	}
+
+	// complete wait to connect
+	go cluster.once.Do(func() {
+		r.getConn(args.RaftID)
+	})
 
 	for idx, instance := range cluster.raftCfg {
 		rpc := raft.Rpc{ID: int32(idx), Host: instance.host, Port: instance.raftPort, CPort: instance.clientPort}
@@ -220,4 +227,103 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	reply.OK = true
 	reply.Config = byteData
 	return reply, nil
+}
+
+func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNamespaceArgs) (reply *register.NewNamespaceReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply.OK = false
+
+	if _, ok := r.namespace[args.Name]; ok {
+		return reply, NamespaceExistedErr
+	}
+
+	name := namespace{
+		raftId:     args.RaftId,
+		privateKey: args.PrivateKey,
+	}
+
+	r.namespace[args.Name] = name
+	reply.OK = true
+	return reply, nil
+}
+
+func (r *RegisterCenter) SetConfig(ctx context.Context, args *register.SetConfigArgs) (reply *register.SetConfigReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	reply.OK = false
+	var namespace namespace
+	ok := true
+	if namespace, ok = r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	r.clusters[namespace.raftId].client.Set(args.Key, args.Value)
+
+	reply.OK = true
+	return reply, nil
+}
+
+func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfigArgs) (reply *register.GetConfigReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply.OK = false
+	var namespace namespace
+	ok := true
+	if namespace, ok = r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	reply.Value = r.clusters[namespace.raftId].client.Get(args.Key)
+	reply.OK = true
+	return reply, nil
+}
+
+func (r *RegisterCenter) DelConfig(ctx context.Context, args *register.DelConfigArgs) (reply *register.DelConfigReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply.OK = false
+	var namespace namespace
+	ok := true
+	if namespace, ok = r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	r.clusters[namespace.raftId].client.Del(args.Key)
+	reply.OK = true
+	return reply, nil
+}
+
+func (r *RegisterCenter) getConn(raftId string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	cluster := r.clusters[raftId]
+
+	cfg := raft.ClientConfig{
+		Size:      cluster.size,
+		Addresses: make([]string, 0),
+	}
+
+	for _, rfCfg := range cluster.raftCfg {
+		address := fmt.Sprintf("%s:%s", rfCfg.host, rfCfg.clientPort)
+		cfg.Addresses = append(cfg.Addresses, address)
+	}
+
+	for times := 3; times != 0; times-- {
+		time.Sleep(10 * time.Second)
+		r.logger.Printf("connect with raft instances %v time...", 4-times)
+		if cluster.client = raft.NewRaftClient(cfg); cluster != nil {
+			break
+		}
+	}
+
+	r.logger.Printf("connect with raft instances success")
 }
