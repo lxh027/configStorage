@@ -50,6 +50,9 @@ type raftCluster struct {
 	// size of raft cluster
 	size int
 
+	// clusterStatus is the status of cluster membership
+	status clusterStatus
+
 	// configs of raft cluster
 	raftCfg []raftCfg
 
@@ -109,6 +112,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	if cluster, ok = r.clusters[args.RaftID]; !ok {
 		cluster = &raftCluster{
 			size:    0,
+			status:  Unready,
 			raftCfg: make([]raftCfg, 0),
 		}
 	}
@@ -136,6 +140,14 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 
 	cluster.size++
 	cluster.raftCfg = append(cluster.raftCfg, cfg)
+
+	if cluster.size == r.cfg.Size {
+		if cluster.status == Unready {
+			cluster.status = Ready
+		} else {
+			cluster.status = Renew
+		}
+	}
 
 	if !ok {
 		r.raftIds = append(r.raftIds, args.RaftID)
@@ -184,6 +196,10 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	cluster.size--
 	cluster.raftCfg = append(cluster.raftCfg[:instanceId], cluster.raftCfg[instanceId+1:]...)
 
+	if cluster.size < r.cfg.Size && cluster.status != Changed {
+		cluster.status = Changed
+	}
+
 	// TODO delete raft cluster size
 	r.clusters[args.RaftID] = cluster
 
@@ -206,7 +222,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	// not complete yet
-	if cluster.size != r.cfg.Size {
+	if cluster.size != r.cfg.Size || cluster.status != Renew {
 		return reply, nil
 	}
 
@@ -214,6 +230,11 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	go cluster.once.Do(func() {
 		r.getConn(args.RaftID)
 	})
+
+	// for renew conns
+	if cluster.status == Renew {
+		r.getConn(args.RaftID)
+	}
 
 	for idx, instance := range cluster.raftCfg {
 		rpc := raft.Rpc{ID: int32(idx), Host: instance.host, Port: instance.raftPort, CPort: instance.clientPort}

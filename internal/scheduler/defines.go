@@ -16,3 +16,12 @@ var RaftEmptyErr RegisterError = errors.New("raft cluster is empty")
 var NamespaceExistedErr KvError = errors.New("namespace existed")
 var NamespaceNotExistedErr KvError = errors.New("namespace not existed")
 var PrivateKeyUnPatchErr KvError = errors.New("private key not patch")
+
+type clusterStatus int
+
+const (
+	Unready clusterStatus = iota
+	Ready
+	Changed
+	Renew
+)
