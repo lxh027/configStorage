@@ -4,6 +4,7 @@ import (
 	"configStorage/api/register"
 	"configStorage/internal/raft"
 	"configStorage/pkg/logger"
+	"configStorage/tools/md5"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -52,6 +53,8 @@ type raftCluster struct {
 
 	// clusterStatus is the status of cluster membership
 	status clusterStatus
+
+	md5 string
 
 	// configs of raft cluster
 	raftCfg []raftCfg
@@ -142,6 +145,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	cluster.raftCfg = append(cluster.raftCfg, cfg)
 
 	if cluster.size == r.cfg.Size {
+		cluster.md5 = md5.GetRandomMd5()
 		if cluster.status == Unready {
 			cluster.status = Ready
 		} else {
@@ -234,6 +238,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	// for renew conns
 	if cluster.status == Renew {
 		r.getConn(args.RaftID)
+		cluster.status = Ready
 	}
 
 	for idx, instance := range cluster.raftCfg {
@@ -247,6 +252,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	byteData, _ := json.Marshal(cfg)
 	reply.OK = true
 	reply.Config = byteData
+	reply.Md5 = cluster.md5
 	return reply, nil
 }
 

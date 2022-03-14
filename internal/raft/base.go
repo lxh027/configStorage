@@ -166,6 +166,12 @@ func (rf *Raft) IsKilled() bool {
 	return rf.state == Shutdown
 }
 
+func (rf *Raft) Status() State {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+	return rf.state
+}
+
 // startRaft start raft transition
 func (rf *Raft) startRaft() {
 	var state State
@@ -191,6 +197,10 @@ func (rf *Raft) startRaft() {
 			return
 		}
 	}
+}
+
+func (rf *Raft) MemberChange(rpcConfig Config) {
+
 }
 
 // reportStatus add log to see instance's status

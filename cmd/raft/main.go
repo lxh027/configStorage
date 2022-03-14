@@ -64,23 +64,30 @@ func main() {
 
 	log.Printf("wait for others to connect...\n")
 
-	// wait for other raft instances to register
-	time.Sleep(5 * time.Second)
-
-	// get raft registration
-	reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
-		Uid:    uid,
-		RaftID: raftConfig.RaftID,
-	})
-
-	if err != nil {
-		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, err.Error())
-	}
 	var cfg raft.Config
-	err = json.Unmarshal(reply.Config, &cfg)
+	// wait for other raft instances to register
+	md5 := ""
+	for times := 5; times != 0; times-- {
+		time.Sleep(time.Second)
+		// get raft registration
+		reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
+			Uid:    uid,
+			RaftID: raftConfig.RaftID,
+		})
+		if err != nil {
+			log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, err.Error())
+		}
 
-	if err != nil {
-		log.Fatalf("parse config error: %v", err.Error())
+		if reply.OK == true {
+			md5 = reply.Md5
+			err = json.Unmarshal(reply.Config, &cfg)
+			if err != nil {
+				log.Fatalf("parse config error: %v", err.Error())
+			}
+		}
+	}
+	if md5 == "" {
+		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, "connect register timeout")
 	}
 
 	defer func(idx int64, raftID string, uid string) {
@@ -95,6 +102,28 @@ func main() {
 	}(int64(cfg.RaftRpc.ID), raftConfig.RaftID, uid)
 
 	rafter := raft.NewRaftInstance(cfg)
+
+	for {
+		time.Sleep(5 * time.Second)
+		if rafter.Status() == raft.Leader {
+			// get raft registration
+			reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
+				Uid:    uid,
+				RaftID: raftConfig.RaftID,
+			})
+			if reply.Md5 != md5 {
+				if err == nil && reply.OK {
+					err = json.Unmarshal(reply.Config, &cfg)
+					if err == nil {
+						rafter.MemberChange(cfg)
+						md5 = reply.Md5
+					}
+				}
+
+			}
+
+		}
+	}
 
 	rafter.Start()
 }
