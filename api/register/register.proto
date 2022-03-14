@@ -44,6 +44,7 @@ message GetRaftRegistrationsArgs {
 message GetRaftRegistrationsReply {
   bool  OK      = 1;
   bytes Config  = 2;
+  string Md5    = 3;
 }
 
 message UnregisterRaftArgs {
