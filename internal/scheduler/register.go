@@ -198,7 +198,6 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 
 	if cluster.size < r.cfg.Size && cluster.status != Changed {
 		cluster.status = Changed
-		cluster.once = sync.Once{}
 	}
 
 	// TODO delete raft cluster size
@@ -223,7 +222,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	// not complete yet
-	if cluster.status != Ready && cluster.status != Renew {
+	if cluster.size != r.cfg.Size || cluster.status != Renew {
 		return reply, nil
 	}
 
@@ -231,6 +230,11 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	go cluster.once.Do(func() {
 		r.getConn(args.RaftID)
 	})
+
+	// for renew conns
+	if cluster.status == Renew {
+		r.getConn(args.RaftID)
+	}
 
 	for idx, instance := range cluster.raftCfg {
 		rpc := raft.Rpc{ID: int32(idx), Host: instance.host, Port: instance.raftPort, CPort: instance.clientPort}
