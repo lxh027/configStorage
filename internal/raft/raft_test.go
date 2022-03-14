@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"configStorage/tools/md5"
 	"log"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func makeRaft() {
 			cfg.RaftPeers = rpcConfigs
 			cfg.LogPrefix = "[raft id: %v]"
 			rafts[i] = NewRaftInstance(cfg)
-			rafts[i].Start()
+			rafts[i].Start(md5.GetRandomMd5())
 		}(i)
 	}
 

@@ -18,7 +18,7 @@ func NewRaftInstance(rpcConfig Config) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
-		peers:        make([]raftrpc.RaftClient, len(rpcConfig.RaftPeers)),
+		peers:        make([]Peer, len(rpcConfig.RaftPeers)),
 		currentTerm:  0,
 		currentIndex: 0,
 		commitIndex:  -1,
@@ -43,8 +43,8 @@ func NewRaftInstance(rpcConfig Config) *Raft {
 	return &rf
 }
 
-func (rf *Raft) Start() {
-
+func (rf *Raft) Start(md5 string) {
+	rf.cfgVersion = md5
 	// start rpc server
 	address := fmt.Sprintf("%s:%s", rf.cfg.RaftRpc.Host, rf.cfg.RaftRpc.Port)
 	l, err := net.Listen("tcp", address)
@@ -93,7 +93,8 @@ func (rf *Raft) Start() {
 					continue
 				}
 				client := raftrpc.NewRaftClient(conn)
-				rf.peers[p.ID] = client
+				rf.peers[p.ID].client = client
+				rf.peers[p.ID].version = md5
 			}
 		}
 		if failNum > len(rf.cfg.RaftPeers)/2 {
@@ -199,7 +200,7 @@ func (rf *Raft) startRaft() {
 	}
 }
 
-func (rf *Raft) MemberChange(rpcConfig Config) {
+func (rf *Raft) MemberChange(rpcConfig Config, md5 string) {
 
 }
 

@@ -103,6 +103,9 @@ func main() {
 
 	rafter := raft.NewRaftInstance(cfg)
 
+	go rafter.Start(md5)
+
+	// check cfg per 5s
 	for {
 		time.Sleep(5 * time.Second)
 		if rafter.Status() == raft.Leader {
@@ -115,7 +118,7 @@ func main() {
 				if err == nil && reply.OK {
 					err = json.Unmarshal(reply.Config, &cfg)
 					if err == nil {
-						rafter.MemberChange(cfg)
+						rafter.MemberChange(cfg, md5)
 						md5 = reply.Md5
 					}
 				}
@@ -125,5 +128,4 @@ func main() {
 		}
 	}
 
-	rafter.Start()
 }
