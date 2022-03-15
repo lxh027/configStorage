@@ -38,7 +38,7 @@ type Raft struct {
 	leaderID int32
 
 	// peers is raft peer instance's host and port
-	peers []Peer
+	peers []raftrpc.RaftClient
 
 	cfgVersion string
 
@@ -77,9 +77,4 @@ type Log struct {
 	Term   int32
 	Index  int32
 	Status bool
-}
-
-type Peer struct {
-	client  raftrpc.RaftClient
-	version string
 }

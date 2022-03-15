@@ -18,7 +18,7 @@ func NewRaftInstance(rpcConfig Config) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
-		peers:        make([]Peer, len(rpcConfig.RaftPeers)),
+		peers:        make([]raftrpc.RaftClient, len(rpcConfig.RaftPeers)),
 		currentTerm:  0,
 		currentIndex: 0,
 		commitIndex:  -1,
@@ -93,8 +93,7 @@ func (rf *Raft) Start(md5 string) {
 					continue
 				}
 				client := raftrpc.NewRaftClient(conn)
-				rf.peers[p.ID].client = client
-				rf.peers[p.ID].version = md5
+				rf.peers[p.ID] = client
 			}
 		}
 		if failNum > len(rf.cfg.RaftPeers)/2 {
@@ -200,8 +199,41 @@ func (rf *Raft) startRaft() {
 	}
 }
 
+// MemberChange can only change one membership at a time in case of brain split cases
 func (rf *Raft) MemberChange(rpcConfig Config, md5 string) {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 
+	cOpts := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
+
+	ok := false
+	for index, newPeer := range rpcConfig.RaftPeers {
+		if rf.cfg.RaftPeers[index].Port != newPeer.Port || rf.cfg.RaftPeers[index].Host != newPeer.Host {
+			serverAddr := fmt.Sprintf("%s:%s", newPeer.Host, newPeer.Port)
+			conn, err := grpc.Dial(serverAddr, cOpts...)
+			if err != nil {
+				rf.logger.Printf("open connection with id %d error, addr: %s, error: %v", newPeer.ID, serverAddr, err.Error())
+				break
+			}
+			client := raftrpc.NewRaftClient(conn)
+			rf.peers[index] = client
+			if rf.state == Leader {
+				rf.leaderState.nextIndex[newPeer.ID] = 0
+				rf.leaderState.matchIndex[newPeer.ID] = 0
+			}
+			ok = true
+		}
+		if index == len(rpcConfig.RaftPeers)-1 {
+			ok = true
+		}
+	}
+
+	if ok {
+		rf.cfgVersion = md5
+		rf.cfg = rpcConfig
+	}
 }
 
 // reportStatus add log to see instance's status

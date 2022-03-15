@@ -115,7 +115,7 @@ func (rf *Raft) loopCandidate() {
 	go func() {
 		rf.mu.Lock()
 		for i, peer := range rf.peers {
-			if i != int(rf.id) && peer.version == rf.cfgVersion {
+			if i != int(rf.id) {
 				args := raftrpc.RequestVoteArgs{
 					Term:         rf.currentTerm,
 					CandidateID:  rf.id,
@@ -147,7 +147,7 @@ func (rf *Raft) loopCandidate() {
 						finish <- struct{}{}
 						return
 					}
-				}(i, peer.client, &args)
+				}(i, peer, &args)
 			}
 		}
 		rf.mu.Unlock()
@@ -237,7 +237,7 @@ func (rf *Raft) loopLeader() bool {
 	go func() {
 		rf.mu.Lock()
 		for index, peer := range rf.peers {
-			if index == int(rf.id) || peer.version != rf.cfgVersion {
+			if index == int(rf.id) {
 				continue
 			}
 			args := raftrpc.AppendEntriesArgs{
@@ -270,7 +270,7 @@ func (rf *Raft) loopLeader() bool {
 					})
 				}
 			}
-			go rf.callAppendEntries(index, peer.client, &args, true, finish)
+			go rf.callAppendEntries(index, peer, &args, true, finish)
 		}
 		rf.mu.Unlock()
 		cnt := peersNum / 2

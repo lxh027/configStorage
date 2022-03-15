@@ -39,6 +39,7 @@ message RegisterRaftReply {
 message GetRaftRegistrationsArgs {
   string Uid    = 1;
   string RaftID = 2;
+  string version = 3;
 }
 
 message GetRaftRegistrationsReply {

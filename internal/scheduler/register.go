@@ -54,6 +54,8 @@ type raftCluster struct {
 	// clusterStatus is the status of cluster membership
 	status clusterStatus
 
+	receivedCnt int
+
 	md5 string
 
 	// configs of raft cluster
@@ -68,6 +70,7 @@ type raftCfg struct {
 	host       string
 	clientPort string
 	raftPort   string
+	taken      bool
 }
 
 type namespace struct {
@@ -114,9 +117,11 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	ok := true
 	if cluster, ok = r.clusters[args.RaftID]; !ok {
 		cluster = &raftCluster{
-			size:    0,
-			status:  Unready,
-			raftCfg: make([]raftCfg, 0),
+			size:        0,
+			status:      Unready,
+			raftCfg:     make([]raftCfg, 0),
+			receivedCnt: 0,
+			md5:         md5.GetRandomMd5(),
 		}
 	}
 
@@ -139,13 +144,25 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 		host:       args.Host,
 		clientPort: args.ClientPort,
 		raftPort:   args.RaftPort,
+		taken:      true,
 	}
 
 	cluster.size++
-	cluster.raftCfg = append(cluster.raftCfg, cfg)
+
+	// fill the empty position
+	if cluster.status == Changed {
+		for i, _ := range cluster.raftCfg {
+			if cluster.raftCfg[i].taken == false {
+				cluster.raftCfg[i] = cfg
+			}
+		}
+	} else {
+		cluster.raftCfg = append(cluster.raftCfg, cfg)
+	}
 
 	if cluster.size == r.cfg.Size {
 		cluster.md5 = md5.GetRandomMd5()
+		cluster.receivedCnt = 0
 		if cluster.status == Unready {
 			cluster.status = Ready
 		} else {
@@ -198,10 +215,11 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	}
 
 	cluster.size--
-	cluster.raftCfg = append(cluster.raftCfg[:instanceId], cluster.raftCfg[instanceId+1:]...)
+	cluster.raftCfg[instanceId].taken = false
 
 	if cluster.size < r.cfg.Size && cluster.status != Changed {
 		cluster.status = Changed
+		cluster.once = sync.Once{}
 	}
 
 	// TODO delete raft cluster size
@@ -226,18 +244,22 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	// not complete yet
-	if cluster.size != r.cfg.Size || cluster.status != Renew {
+	if cluster.size != r.cfg.Size {
 		return reply, nil
 	}
 
 	// complete wait to connect
 	go cluster.once.Do(func() {
+		r.logger.Printf("trying to connect to instances......")
 		r.getConn(args.RaftID)
 	})
 
-	// for renew conns
-	if cluster.status == Renew {
-		r.getConn(args.RaftID)
+	if args.Version == cluster.md5 {
+		cluster.receivedCnt++
+	}
+
+	if cluster.receivedCnt == r.cfg.Size {
+		r.logger.Printf("new cfg has been received by all clusters")
 		cluster.status = Ready
 	}
 

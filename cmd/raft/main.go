@@ -75,7 +75,7 @@ func main() {
 			RaftID: raftConfig.RaftID,
 		})
 		if err != nil {
-			log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, err.Error())
+			log.Printf("open connection error, addr: %s, error: %v  trying again......", raftConfig.RegisterAddr, err.Error())
 		}
 
 		if reply.OK == true {
@@ -111,8 +111,9 @@ func main() {
 		if rafter.Status() == raft.Leader {
 			// get raft registration
 			reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
-				Uid:    uid,
-				RaftID: raftConfig.RaftID,
+				Uid:     uid,
+				RaftID:  raftConfig.RaftID,
+				Version: md5,
 			})
 			if reply.Md5 != md5 {
 				if err == nil && reply.OK {
