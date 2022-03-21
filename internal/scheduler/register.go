@@ -130,6 +130,8 @@ func (r *RegisterCenter) Start() {
 func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.RegisterRaftArgs) (reply *register.RegisterRaftReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.logger.Printf("raft register request from cluster %s, instance %s: %s:%s", args.RaftID, args.Uid, args.Host, args.RaftPort)
+
 	reply = &register.RegisterRaftReply{OK: false}
 
 	var cluster *raftCluster
@@ -278,7 +280,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	if cluster.receivedCnt == r.cfg.Size {
-		r.logger.Printf("new cfg has been received by all clusters")
+		r.logger.Printf("new cfg has been received by all instances of cluster %s", args.RaftID)
 		cluster.status = Ready
 	}
 

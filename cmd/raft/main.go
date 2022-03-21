@@ -18,9 +18,11 @@ func main() {
 	var env string
 	var port string
 	var cport string
+	var raftId string
 	flag.StringVar(&env, "env", "dev", "配置环境")
 	flag.StringVar(&port, "raft-port", "2001", "raft端口")
 	flag.StringVar(&cport, "client-port", "3001", "raft client 端口")
+	flag.StringVar(&raftId, "raft-id", "raft001", "raft cluster ID")
 	flag.Parse()
 
 	p := path.Join("./config", env, "raft.yml")
@@ -43,6 +45,10 @@ func main() {
 
 	if cport != "3001" {
 		args.ClientPort = cport
+	}
+
+	if raftId != "raft001" {
+		args.RaftID = raftId
 	}
 
 	cOpts := []grpc.DialOption{
@@ -72,10 +78,11 @@ func main() {
 		// get raft registration
 		reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
 			Uid:    uid,
-			RaftID: raftConfig.RaftID,
+			RaftID: raftId,
 		})
 		if err != nil {
 			log.Printf("open connection error, addr: %s, error: %v  trying again......", raftConfig.RegisterAddr, err.Error())
+			continue
 		}
 
 		if reply.OK == true {
@@ -99,7 +106,7 @@ func main() {
 		if err != nil {
 			log.Printf("error occurs when unregister from center, err: %v", err.Error())
 		}
-	}(int64(cfg.RaftRpc.ID), raftConfig.RaftID, uid)
+	}(int64(cfg.RaftRpc.ID), raftId, uid)
 
 	rafter := raft.NewRaftInstance(cfg)
 
@@ -112,10 +119,10 @@ func main() {
 			// get raft registration
 			reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
 				Uid:     uid,
-				RaftID:  raftConfig.RaftID,
+				RaftID:  raftId,
 				Version: md5,
 			})
-			if reply.Md5 != md5 {
+			if err == nil && reply.Md5 != md5 {
 				if err == nil && reply.OK {
 					err = json.Unmarshal(reply.Config, &cfg)
 					if err == nil {
