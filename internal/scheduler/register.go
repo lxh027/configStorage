@@ -22,7 +22,9 @@ type RegisterCenter struct {
 
 	mu sync.Mutex
 
-	server *grpc.Server
+	raftServer *grpc.Server
+
+	apiServer *grpc.Server
 
 	// a simple storage interface with Get and Set functions
 	s Storage
@@ -90,19 +92,36 @@ func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 }
 
 func (r *RegisterCenter) Start() {
-	address := fmt.Sprintf("%s:%s", r.cfg.Host, r.cfg.Port)
+	var sOpts []grpc.ServerOption
+
+	go func() {
+		address := fmt.Sprintf("%s:%s", r.cfg.Host, r.cfg.Port)
+		l, err := net.Listen("tcp", address)
+		if err != nil {
+			r.logger.Fatalf("Start rpc server error: %v", err.Error())
+		}
+		r.raftServer = grpc.NewServer(sOpts...)
+		register.RegisterRegisterRaftServer(r.raftServer, r)
+
+		r.logger.Printf("serving register center at %s:%s", r.cfg.Host, r.cfg.Port)
+		err = r.raftServer.Serve(l)
+		if err != nil {
+			r.logger.Fatalf("Server rpc error: %v", err.Error())
+		}
+	}()
+
+	address := fmt.Sprintf("%s:%s", r.cfg.Host, r.cfg.CPort)
 	l, err := net.Listen("tcp", address)
 	if err != nil {
 		r.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
-	var sOpts []grpc.ServerOption
 
-	r.server = grpc.NewServer(sOpts...)
-	register.RegisterRegisterRaftServer(r.server, r)
+	r.apiServer = grpc.NewServer(sOpts...)
+	register.RegisterKvStorageServer(r.raftServer, r)
 
-	r.logger.Printf("serving register center at %s:%s", r.cfg.Host, r.cfg.Port)
+	r.logger.Printf("serving api server at %s:%s", r.cfg.Host, r.cfg.CPort)
 
-	err = r.server.Serve(l)
+	err = r.apiServer.Serve(l)
 	if err != nil {
 		r.logger.Fatalf("Server rpc error: %v", err.Error())
 	}

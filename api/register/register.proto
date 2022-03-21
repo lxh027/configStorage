@@ -14,6 +14,8 @@ service registerRaft {
 }
 
 service kvStorage {
+  rpc GetNamespaces(GetNamespacesAtrg)
+
   rpc NewNamespace(NewNamespaceArgs) returns (NewNamespaceReply);
 
   rpc SetConfig(SetConfigArgs) returns (SetConfigReply);
