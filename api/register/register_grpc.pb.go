@@ -175,5 +175,199 @@ var RegisterRaft_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/register/register.proto",
+	Metadata: "register.proto",
+}
+
+// KvStorageClient is the client API for KvStorage service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type KvStorageClient interface {
+	NewNamespace(ctx context.Context, in *NewNamespaceArgs, opts ...grpc.CallOption) (*NewNamespaceReply, error)
+	SetConfig(ctx context.Context, in *SetConfigArgs, opts ...grpc.CallOption) (*SetConfigReply, error)
+	GetConfig(ctx context.Context, in *GetConfigArgs, opts ...grpc.CallOption) (*GetConfigReply, error)
+	DelConfig(ctx context.Context, in *DelConfigArgs, opts ...grpc.CallOption) (*DelConfigReply, error)
+}
+
+type kvStorageClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewKvStorageClient(cc grpc.ClientConnInterface) KvStorageClient {
+	return &kvStorageClient{cc}
+}
+
+func (c *kvStorageClient) NewNamespace(ctx context.Context, in *NewNamespaceArgs, opts ...grpc.CallOption) (*NewNamespaceReply, error) {
+	out := new(NewNamespaceReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/NewNamespace", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kvStorageClient) SetConfig(ctx context.Context, in *SetConfigArgs, opts ...grpc.CallOption) (*SetConfigReply, error) {
+	out := new(SetConfigReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/SetConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kvStorageClient) GetConfig(ctx context.Context, in *GetConfigArgs, opts ...grpc.CallOption) (*GetConfigReply, error) {
+	out := new(GetConfigReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/GetConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kvStorageClient) DelConfig(ctx context.Context, in *DelConfigArgs, opts ...grpc.CallOption) (*DelConfigReply, error) {
+	out := new(DelConfigReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/DelConfig", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// KvStorageServer is the server API for KvStorage service.
+// All implementations must embed UnimplementedKvStorageServer
+// for forward compatibility
+type KvStorageServer interface {
+	NewNamespace(context.Context, *NewNamespaceArgs) (*NewNamespaceReply, error)
+	SetConfig(context.Context, *SetConfigArgs) (*SetConfigReply, error)
+	GetConfig(context.Context, *GetConfigArgs) (*GetConfigReply, error)
+	DelConfig(context.Context, *DelConfigArgs) (*DelConfigReply, error)
+	mustEmbedUnimplementedKvStorageServer()
+}
+
+// UnimplementedKvStorageServer must be embedded to have forward compatible implementations.
+type UnimplementedKvStorageServer struct {
+}
+
+func (UnimplementedKvStorageServer) NewNamespace(context.Context, *NewNamespaceArgs) (*NewNamespaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NewNamespace not implemented")
+}
+func (UnimplementedKvStorageServer) SetConfig(context.Context, *SetConfigArgs) (*SetConfigReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+}
+func (UnimplementedKvStorageServer) GetConfig(context.Context, *GetConfigArgs) (*GetConfigReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
+func (UnimplementedKvStorageServer) DelConfig(context.Context, *DelConfigArgs) (*DelConfigReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DelConfig not implemented")
+}
+func (UnimplementedKvStorageServer) mustEmbedUnimplementedKvStorageServer() {}
+
+// UnsafeKvStorageServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to KvStorageServer will
+// result in compilation errors.
+type UnsafeKvStorageServer interface {
+	mustEmbedUnimplementedKvStorageServer()
+}
+
+func RegisterKvStorageServer(s grpc.ServiceRegistrar, srv KvStorageServer) {
+	s.RegisterService(&KvStorage_ServiceDesc, srv)
+}
+
+func _KvStorage_NewNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewNamespaceArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).NewNamespace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/NewNamespace",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).NewNamespace(ctx, req.(*NewNamespaceArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KvStorage_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetConfigArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).SetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/SetConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).SetConfig(ctx, req.(*SetConfigArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KvStorage_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).GetConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/GetConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).GetConfig(ctx, req.(*GetConfigArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KvStorage_DelConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelConfigArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).DelConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/DelConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).DelConfig(ctx, req.(*DelConfigArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// KvStorage_ServiceDesc is the grpc.ServiceDesc for KvStorage service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var KvStorage_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "kvStorage",
+	HandlerType: (*KvStorageServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "NewNamespace",
+			Handler:    _KvStorage_NewNamespace_Handler,
+		},
+		{
+			MethodName: "SetConfig",
+			Handler:    _KvStorage_SetConfig_Handler,
+		},
+		{
+			MethodName: "GetConfig",
+			Handler:    _KvStorage_GetConfig_Handler,
+		},
+		{
+			MethodName: "DelConfig",
+			Handler:    _KvStorage_DelConfig_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "register.proto",
 }

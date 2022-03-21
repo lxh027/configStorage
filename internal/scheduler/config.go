@@ -7,8 +7,9 @@ import (
 )
 
 type RegisterConfig struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
+	Host  string `yaml:"host"`
+	Port  string `yaml:"port"`
+	CPort string `yaml:"c_port"`
 	// raft instances' num of raft cluster
 	Size          int    `yaml:"size"`
 	RaftLogPrefix string `yaml:"raft-log-prefix"`

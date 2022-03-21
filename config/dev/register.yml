@@ -1,5 +1,6 @@
 host: localhost
-port: 3000
+port: 2889
+c_port: 2888
 size: 3
 raft-log-prefix: "[raft id %v]"
 log-prefix: "[register center]"

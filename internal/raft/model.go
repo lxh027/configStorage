@@ -40,6 +40,8 @@ type Raft struct {
 	// peers is raft peer instance's host and port
 	peers []raftrpc.RaftClient
 
+	cfgVersion string
+
 	// params to indicate instance status
 	// currentTerm is term id of the instance
 	// commitIndex is the Index of the last commit Entry

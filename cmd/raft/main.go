@@ -18,9 +18,11 @@ func main() {
 	var env string
 	var port string
 	var cport string
+	var raftId string
 	flag.StringVar(&env, "env", "dev", "配置环境")
 	flag.StringVar(&port, "raft-port", "2001", "raft端口")
 	flag.StringVar(&cport, "client-port", "3001", "raft client 端口")
+	flag.StringVar(&raftId, "raft-id", "raft001", "raft cluster ID")
 	flag.Parse()
 
 	p := path.Join("./config", env, "raft.yml")
@@ -45,6 +47,10 @@ func main() {
 		args.ClientPort = cport
 	}
 
+	if raftId != "raft001" {
+		args.RaftID = raftId
+	}
+
 	cOpts := []grpc.DialOption{
 		grpc.WithInsecure(),
 	}
@@ -64,23 +70,31 @@ func main() {
 
 	log.Printf("wait for others to connect...\n")
 
-	// wait for other raft instances to register
-	time.Sleep(5 * time.Second)
-
-	// get raft registration
-	reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
-		Uid:    uid,
-		RaftID: raftConfig.RaftID,
-	})
-
-	if err != nil {
-		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, err.Error())
-	}
 	var cfg raft.Config
-	err = json.Unmarshal(reply.Config, &cfg)
+	// wait for other raft instances to register
+	md5 := ""
+	for times := 5; times != 0; times-- {
+		time.Sleep(time.Second)
+		// get raft registration
+		reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
+			Uid:    uid,
+			RaftID: raftId,
+		})
+		if err != nil {
+			log.Printf("open connection error, addr: %s, error: %v  trying again......", raftConfig.RegisterAddr, err.Error())
+			continue
+		}
 
-	if err != nil {
-		log.Fatalf("parse config error: %v", err.Error())
+		if reply.OK == true {
+			md5 = reply.Md5
+			err = json.Unmarshal(reply.Config, &cfg)
+			if err != nil {
+				log.Fatalf("parse config error: %v", err.Error())
+			}
+		}
+	}
+	if md5 == "" {
+		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, "connect register timeout")
 	}
 
 	defer func(idx int64, raftID string, uid string) {
@@ -92,9 +106,34 @@ func main() {
 		if err != nil {
 			log.Printf("error occurs when unregister from center, err: %v", err.Error())
 		}
-	}(int64(cfg.RaftRpc.ID), raftConfig.RaftID, uid)
+	}(int64(cfg.RaftRpc.ID), raftId, uid)
 
 	rafter := raft.NewRaftInstance(cfg)
 
-	rafter.Start()
+	go rafter.Start(md5)
+
+	// check cfg per 5s
+	for {
+		time.Sleep(5 * time.Second)
+		if rafter.Status() == raft.Leader {
+			// get raft registration
+			reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
+				Uid:     uid,
+				RaftID:  raftId,
+				Version: md5,
+			})
+			if err == nil && reply.Md5 != md5 {
+				if err == nil && reply.OK {
+					err = json.Unmarshal(reply.Config, &cfg)
+					if err == nil {
+						rafter.MemberChange(cfg, md5)
+						md5 = reply.Md5
+					}
+				}
+
+			}
+
+		}
+	}
+
 }

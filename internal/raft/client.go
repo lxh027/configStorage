@@ -10,8 +10,8 @@ import (
 )
 
 type ClientConfig struct {
-	size      int
-	addresses []string
+	Size      int
+	Addresses []string
 }
 
 type Client interface {
@@ -29,19 +29,20 @@ type rfClient struct {
 
 func NewRaftClient(cfg ClientConfig) Client {
 	c := rfClient{
-		size:      cfg.size,
+		size:      cfg.Size,
 		logger:    logger.NewLogger(make([]interface{}, 0), ""),
-		instances: make([]raftrpc.StateClient, cfg.size),
+		instances: make([]raftrpc.StateClient, cfg.Size),
 		leaderId:  0,
 	}
 
-	for i, address := range cfg.addresses {
+	for i, address := range cfg.Addresses {
 		cOpts := []grpc.DialOption{
 			grpc.WithInsecure(),
 		}
 		conn, err := grpc.Dial(address, cOpts...)
 		if err != nil {
-			c.logger.Fatalf("error while get conn for raft server, error: %v", err.Error())
+			c.logger.Printf("error while get conn for raft server, error: %v", err.Error())
+			return nil
 		}
 		c.instances[i] = raftrpc.NewStateClient(conn)
 	}

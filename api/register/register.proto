@@ -13,6 +13,19 @@ service registerRaft {
   rpc UnregisterRaft(UnregisterRaftArgs) returns (UnregisterRaftReply);
 }
 
+service kvStorage {
+  rpc GetNamespaces(GetNamespacesAtrg)
+
+  rpc NewNamespace(NewNamespaceArgs) returns (NewNamespaceReply);
+
+  rpc SetConfig(SetConfigArgs) returns (SetConfigReply);
+
+  rpc GetConfig(GetConfigArgs) returns (GetConfigReply);
+
+  rpc DelConfig(DelConfigArgs) returns (DelConfigReply);
+}
+
+
 message RegisterRaftArgs {
   string Uid      = 1;
   string RaftID   = 2;
@@ -28,11 +41,13 @@ message RegisterRaftReply {
 message GetRaftRegistrationsArgs {
   string Uid    = 1;
   string RaftID = 2;
+  string version = 3;
 }
 
 message GetRaftRegistrationsReply {
   bool  OK      = 1;
   bytes Config  = 2;
+  string Md5    = 3;
 }
 
 message UnregisterRaftArgs {
@@ -43,4 +58,47 @@ message UnregisterRaftArgs {
 
 message UnregisterRaftReply {
 
+}
+
+message NewNamespaceArgs {
+  string Name = 1;
+  string PrivateKey = 2;
+  string raftId = 3;
+}
+
+message NewNamespaceReply {
+  bool OK = 1;
+  string Msg = 2;
+}
+
+message SetConfigArgs {
+  string Namespace = 1;
+  string PrivateKey = 2;
+  string Key = 3;
+  string Value = 4;
+}
+
+message SetConfigReply {
+  bool OK = 1;
+}
+
+message GetConfigArgs {
+  string Namespace = 1;
+  string PrivateKey = 2;
+  string Key = 3;
+}
+
+message GetConfigReply {
+  bool OK = 1;
+  string Value = 2;
+}
+
+message DelConfigArgs {
+  string Namespace = 1;
+  string PrivateKey = 2;
+  string Key = 3;
+}
+
+message DelConfigReply {
+  bool OK = 1;
 }
