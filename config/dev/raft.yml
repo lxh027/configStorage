@@ -1,5 +1,5 @@
 host: localhost
-port: 2001
-c-port: 3001
-register-address: "localhost:2889"
+port: 2000
+c-port: 3000
+register-address: "172.17.0.1:2889"
 raft-id: raft001

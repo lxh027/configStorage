@@ -1,4 +1,4 @@
-host: localhost
+host: 0.0.0.0
 port: 2889
 c_port: 2888
 size: 3
