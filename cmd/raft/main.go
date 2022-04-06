@@ -20,8 +20,8 @@ func main() {
 	var cport string
 	var raftId string
 	flag.StringVar(&env, "env", "dev", "配置环境")
-	flag.StringVar(&port, "raft-port", "2001", "raft端口")
-	flag.StringVar(&cport, "client-port", "3001", "raft client 端口")
+	flag.StringVar(&port, "raft-port", "2000", "raft端口")
+	flag.StringVar(&cport, "client-port", "3000", "raft client 端口")
 	flag.StringVar(&raftId, "raft-id", "raft001", "raft cluster ID")
 	flag.Parse()
 
@@ -33,22 +33,10 @@ func main() {
 	fmt.Printf("uid: %v\n", uid)
 	args := register.RegisterRaftArgs{
 		Uid:        uid,
-		RaftID:     raftConfig.RaftID,
+		RaftID:     raftId,
 		Host:       raftConfig.Host,
-		RaftPort:   raftConfig.Port,
-		ClientPort: raftConfig.CPort,
-	}
-
-	if port != "2001" {
-		args.RaftPort = port
-	}
-
-	if cport != "3001" {
-		args.ClientPort = cport
-	}
-
-	if raftId != "raft001" {
-		args.RaftID = raftId
+		RaftPort:   port,
+		ClientPort: cport,
 	}
 
 	cOpts := []grpc.DialOption{
@@ -108,7 +96,7 @@ func main() {
 		}
 	}(int64(cfg.RaftRpc.ID), raftId, uid)
 
-	rafter := raft.NewRaftInstance(cfg)
+	rafter := raft.NewRaftInstance(cfg, raftConfig)
 
 	go rafter.Start(md5)
 

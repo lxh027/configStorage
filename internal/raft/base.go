@@ -14,7 +14,7 @@ import (
 )
 
 // NewRaftInstance start a new Raft instance and return a pointer
-func NewRaftInstance(rpcConfig Config) *Raft {
+func NewRaftInstance(rpcConfig Config, rfConfig RfConfig) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
@@ -31,6 +31,7 @@ func NewRaftInstance(rpcConfig Config) *Raft {
 		logger:       logger.NewLogger([]interface{}{rpcConfig.RaftRpc.ID}, rpcConfig.LogPrefix),
 		persister:    NewPersister(),
 		cfg:          rpcConfig,
+		raftCfg:      rfConfig,
 		storage:      NewRaftStorage(),
 		leaderState: struct {
 			nextIndex  map[int32]int32
@@ -46,13 +47,13 @@ func NewRaftInstance(rpcConfig Config) *Raft {
 func (rf *Raft) Start(md5 string) {
 	rf.cfgVersion = md5
 	// start rpc server
-	address := fmt.Sprintf("%s:%s", rf.cfg.RaftRpc.Host, rf.cfg.RaftRpc.Port)
+	address := fmt.Sprintf("%s:%s", rf.raftCfg.Host, rf.raftCfg.Port)
 	l, err := net.Listen("tcp", address)
 	if err != nil {
 		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
 
-	c_address := fmt.Sprintf("%s:%s", rf.cfg.RaftRpc.Host, rf.cfg.RaftRpc.CPort)
+	c_address := fmt.Sprintf("%s:%s", rf.raftCfg.Host, rf.raftCfg.CPort)
 	cl, err := net.Listen("tcp", c_address)
 	if err != nil {
 		rf.logger.Fatalf("Start rpc server error: %v", err.Error())

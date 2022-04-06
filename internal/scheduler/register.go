@@ -118,7 +118,7 @@ func (r *RegisterCenter) Start() {
 	}
 
 	r.apiServer = grpc.NewServer(sOpts...)
-	register.RegisterKvStorageServer(r.raftServer, r)
+	register.RegisterKvStorageServer(r.apiServer, r)
 
 	r.logger.Printf("serving api server at %s:%s", r.cfg.Host, r.cfg.CPort)
 

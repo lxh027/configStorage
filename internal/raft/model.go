@@ -22,6 +22,9 @@ type Raft struct {
 	// configs
 	cfg Config
 
+	// rf config
+	raftCfg RfConfig
+
 	// storage
 	storage Storage
 
