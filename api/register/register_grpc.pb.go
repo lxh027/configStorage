@@ -182,10 +182,11 @@ var RegisterRaft_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KvStorageClient interface {
+	GetClusters(ctx context.Context, in *GetClusterArgs, opts ...grpc.CallOption) (*GetClusterReply, error)
 	NewNamespace(ctx context.Context, in *NewNamespaceArgs, opts ...grpc.CallOption) (*NewNamespaceReply, error)
-	SetConfig(ctx context.Context, in *SetConfigArgs, opts ...grpc.CallOption) (*SetConfigReply, error)
+	Commit(ctx context.Context, in *CommitArgs, opts ...grpc.CallOption) (*CommitReply, error)
 	GetConfig(ctx context.Context, in *GetConfigArgs, opts ...grpc.CallOption) (*GetConfigReply, error)
-	DelConfig(ctx context.Context, in *DelConfigArgs, opts ...grpc.CallOption) (*DelConfigReply, error)
+	GetConfigsByNamespace(ctx context.Context, in *GetConfigsByNamespaceArgs, opts ...grpc.CallOption) (*GetConfigsByNamespaceReply, error)
 }
 
 type kvStorageClient struct {
@@ -194,6 +195,15 @@ type kvStorageClient struct {
 
 func NewKvStorageClient(cc grpc.ClientConnInterface) KvStorageClient {
 	return &kvStorageClient{cc}
+}
+
+func (c *kvStorageClient) GetClusters(ctx context.Context, in *GetClusterArgs, opts ...grpc.CallOption) (*GetClusterReply, error) {
+	out := new(GetClusterReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/GetClusters", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *kvStorageClient) NewNamespace(ctx context.Context, in *NewNamespaceArgs, opts ...grpc.CallOption) (*NewNamespaceReply, error) {
@@ -205,9 +215,9 @@ func (c *kvStorageClient) NewNamespace(ctx context.Context, in *NewNamespaceArgs
 	return out, nil
 }
 
-func (c *kvStorageClient) SetConfig(ctx context.Context, in *SetConfigArgs, opts ...grpc.CallOption) (*SetConfigReply, error) {
-	out := new(SetConfigReply)
-	err := c.cc.Invoke(ctx, "/kvStorage/SetConfig", in, out, opts...)
+func (c *kvStorageClient) Commit(ctx context.Context, in *CommitArgs, opts ...grpc.CallOption) (*CommitReply, error) {
+	out := new(CommitReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/Commit", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -223,9 +233,9 @@ func (c *kvStorageClient) GetConfig(ctx context.Context, in *GetConfigArgs, opts
 	return out, nil
 }
 
-func (c *kvStorageClient) DelConfig(ctx context.Context, in *DelConfigArgs, opts ...grpc.CallOption) (*DelConfigReply, error) {
-	out := new(DelConfigReply)
-	err := c.cc.Invoke(ctx, "/kvStorage/DelConfig", in, out, opts...)
+func (c *kvStorageClient) GetConfigsByNamespace(ctx context.Context, in *GetConfigsByNamespaceArgs, opts ...grpc.CallOption) (*GetConfigsByNamespaceReply, error) {
+	out := new(GetConfigsByNamespaceReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/GetConfigsByNamespace", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -236,10 +246,11 @@ func (c *kvStorageClient) DelConfig(ctx context.Context, in *DelConfigArgs, opts
 // All implementations must embed UnimplementedKvStorageServer
 // for forward compatibility
 type KvStorageServer interface {
+	GetClusters(context.Context, *GetClusterArgs) (*GetClusterReply, error)
 	NewNamespace(context.Context, *NewNamespaceArgs) (*NewNamespaceReply, error)
-	SetConfig(context.Context, *SetConfigArgs) (*SetConfigReply, error)
+	Commit(context.Context, *CommitArgs) (*CommitReply, error)
 	GetConfig(context.Context, *GetConfigArgs) (*GetConfigReply, error)
-	DelConfig(context.Context, *DelConfigArgs) (*DelConfigReply, error)
+	GetConfigsByNamespace(context.Context, *GetConfigsByNamespaceArgs) (*GetConfigsByNamespaceReply, error)
 	mustEmbedUnimplementedKvStorageServer()
 }
 
@@ -247,17 +258,20 @@ type KvStorageServer interface {
 type UnimplementedKvStorageServer struct {
 }
 
+func (UnimplementedKvStorageServer) GetClusters(context.Context, *GetClusterArgs) (*GetClusterReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusters not implemented")
+}
 func (UnimplementedKvStorageServer) NewNamespace(context.Context, *NewNamespaceArgs) (*NewNamespaceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NewNamespace not implemented")
 }
-func (UnimplementedKvStorageServer) SetConfig(context.Context, *SetConfigArgs) (*SetConfigReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetConfig not implemented")
+func (UnimplementedKvStorageServer) Commit(context.Context, *CommitArgs) (*CommitReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Commit not implemented")
 }
 func (UnimplementedKvStorageServer) GetConfig(context.Context, *GetConfigArgs) (*GetConfigReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
 }
-func (UnimplementedKvStorageServer) DelConfig(context.Context, *DelConfigArgs) (*DelConfigReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DelConfig not implemented")
+func (UnimplementedKvStorageServer) GetConfigsByNamespace(context.Context, *GetConfigsByNamespaceArgs) (*GetConfigsByNamespaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigsByNamespace not implemented")
 }
 func (UnimplementedKvStorageServer) mustEmbedUnimplementedKvStorageServer() {}
 
@@ -270,6 +284,24 @@ type UnsafeKvStorageServer interface {
 
 func RegisterKvStorageServer(s grpc.ServiceRegistrar, srv KvStorageServer) {
 	s.RegisterService(&KvStorage_ServiceDesc, srv)
+}
+
+func _KvStorage_GetClusters_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).GetClusters(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/GetClusters",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).GetClusters(ctx, req.(*GetClusterArgs))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _KvStorage_NewNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -290,20 +322,20 @@ func _KvStorage_NewNamespace_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KvStorage_SetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetConfigArgs)
+func _KvStorage_Commit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvStorageServer).SetConfig(ctx, in)
+		return srv.(KvStorageServer).Commit(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kvStorage/SetConfig",
+		FullMethod: "/kvStorage/Commit",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvStorageServer).SetConfig(ctx, req.(*SetConfigArgs))
+		return srv.(KvStorageServer).Commit(ctx, req.(*CommitArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -326,20 +358,20 @@ func _KvStorage_GetConfig_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KvStorage_DelConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DelConfigArgs)
+func _KvStorage_GetConfigsByNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigsByNamespaceArgs)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KvStorageServer).DelConfig(ctx, in)
+		return srv.(KvStorageServer).GetConfigsByNamespace(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/kvStorage/DelConfig",
+		FullMethod: "/kvStorage/GetConfigsByNamespace",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KvStorageServer).DelConfig(ctx, req.(*DelConfigArgs))
+		return srv.(KvStorageServer).GetConfigsByNamespace(ctx, req.(*GetConfigsByNamespaceArgs))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -352,20 +384,24 @@ var KvStorage_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*KvStorageServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "GetClusters",
+			Handler:    _KvStorage_GetClusters_Handler,
+		},
+		{
 			MethodName: "NewNamespace",
 			Handler:    _KvStorage_NewNamespace_Handler,
 		},
 		{
-			MethodName: "SetConfig",
-			Handler:    _KvStorage_SetConfig_Handler,
+			MethodName: "Commit",
+			Handler:    _KvStorage_Commit_Handler,
 		},
 		{
 			MethodName: "GetConfig",
 			Handler:    _KvStorage_GetConfig_Handler,
 		},
 		{
-			MethodName: "DelConfig",
-			Handler:    _KvStorage_DelConfig_Handler,
+			MethodName: "GetConfigsByNamespace",
+			Handler:    _KvStorage_GetConfigsByNamespace_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

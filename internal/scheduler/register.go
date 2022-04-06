@@ -78,6 +78,7 @@ type raftCfg struct {
 type namespace struct {
 	raftId     string
 	privateKey string
+	status     bool
 }
 
 func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
@@ -318,22 +319,21 @@ func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNam
 	return reply, nil
 }
 
-func (r *RegisterCenter) SetConfig(ctx context.Context, args *register.SetConfigArgs) (reply *register.SetConfigReply, err error) {
+func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClusterArgs) (reply *register.GetClusterReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
-	reply.OK = false
-	var namespace namespace
-	ok := true
-	if namespace, ok = r.namespace[args.Namespace]; !ok {
-		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
-		return reply, PrivateKeyUnPatchErr
+	reply.Clusters = []*register.GetClusterReply_Cluster{}
+	for raftID, cluster := range r.clusters {
+		addr := ""
+		for _, instance := range cluster.raftCfg {
+			addr = addr + instance.host + ":" + instance.clientPort + "\n"
+		}
+		re := register.GetClusterReply_Cluster{
+			RaftID:  raftID,
+			Address: addr,
+		}
+		reply.Clusters = append(reply.Clusters, &re)
 	}
-
-	r.clusters[namespace.raftId].client.Set(args.Key, args.Value)
-
-	reply.OK = true
 	return reply, nil
 }
 
@@ -354,7 +354,7 @@ func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfig
 	return reply, nil
 }
 
-func (r *RegisterCenter) DelConfig(ctx context.Context, args *register.DelConfigArgs) (reply *register.DelConfigReply, err error) {
+func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *register.GetConfigsByNamespaceArgs) (reply *register.GetConfigsByNamespaceReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	reply.OK = false
@@ -366,9 +366,58 @@ func (r *RegisterCenter) DelConfig(ctx context.Context, args *register.DelConfig
 		return reply, PrivateKeyUnPatchErr
 	}
 
-	r.clusters[namespace.raftId].client.Del(args.Key)
+	reply.Configs = r.clusters[namespace.raftId].client.PrefixConfig(args.Namespace)
 	reply.OK = true
 	return reply, nil
+}
+
+func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) (reply *register.CommitReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply.OK = false
+	reply.LastCommitID = args.Ops[0].Id
+	if r.namespace[args.Namespace].status {
+		return reply, NamespaceCommittingErr
+	}
+
+	if namespace, ok := r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	for _, op := range args.Ops {
+		if op.Type == 0 {
+			if r.setConfig(args.Namespace, op) != nil {
+				reply.LastCommitID = op.Id
+				return reply, nil
+			} else if r.delConfig(args.Namespace, op) != nil {
+				reply.LastCommitID = op.Id
+				return reply, nil
+			}
+		}
+	}
+	reply.OK = true
+	reply.LastCommitID = args.Ops[len(args.Ops)-1].Id
+	return reply, nil
+}
+
+func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.clusters[name].client.Set(args.Key, args.Value)
+
+	return nil
+}
+
+func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.clusters[name].client.Del(args.Key)
+
+	return nil
 }
 
 func (r *RegisterCenter) getConn(raftId string) {

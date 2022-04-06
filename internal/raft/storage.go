@@ -1,11 +1,14 @@
 package raft
 
+import "strings"
+
 type Storage interface {
 	Get(string) (string, error)
 	Set(string, string)
 	Del(string) error
 	Load(*map[string]string)
 	Copy() map[string]string
+	PrefixAll(string) *map[string]string
 }
 
 type rfStorage struct {
@@ -33,6 +36,16 @@ func (s *rfStorage) Get(key string) (string, error) {
 		return "", KeyNotFoundErr
 	}
 	return v, nil
+}
+
+func (s *rfStorage) PrefixAll(prefix string) *map[string]string {
+	m := map[string]string{}
+	for k, v := range s.storage {
+		if strings.HasPrefix(k, prefix) {
+			m[k] = v
+		}
+	}
+	return &m
 }
 
 func (s *rfStorage) Set(key string, value string) {

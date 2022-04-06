@@ -137,7 +137,7 @@ var Raft_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/raftrpc/raft.proto",
+	Metadata: "raft.proto",
 }
 
 // StateClient is the client API for State service.
@@ -148,6 +148,7 @@ type StateClient interface {
 	NewEntry(ctx context.Context, in *NewEntryArgs, opts ...grpc.CallOption) (*NewEntryReply, error)
 	// return key value
 	GetValue(ctx context.Context, in *GetValueArgs, opts ...grpc.CallOption) (*GetValueReply, error)
+	GetPrefixConfigs(ctx context.Context, in *GetPrefixConfigArgs, opts ...grpc.CallOption) (*GetPrefixConfigReply, error)
 }
 
 type stateClient struct {
@@ -176,6 +177,15 @@ func (c *stateClient) GetValue(ctx context.Context, in *GetValueArgs, opts ...gr
 	return out, nil
 }
 
+func (c *stateClient) GetPrefixConfigs(ctx context.Context, in *GetPrefixConfigArgs, opts ...grpc.CallOption) (*GetPrefixConfigReply, error) {
+	out := new(GetPrefixConfigReply)
+	err := c.cc.Invoke(ctx, "/state/GetPrefixConfigs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StateServer is the server API for State service.
 // All implementations must embed UnimplementedStateServer
 // for forward compatibility
@@ -184,6 +194,7 @@ type StateServer interface {
 	NewEntry(context.Context, *NewEntryArgs) (*NewEntryReply, error)
 	// return key value
 	GetValue(context.Context, *GetValueArgs) (*GetValueReply, error)
+	GetPrefixConfigs(context.Context, *GetPrefixConfigArgs) (*GetPrefixConfigReply, error)
 	mustEmbedUnimplementedStateServer()
 }
 
@@ -196,6 +207,9 @@ func (UnimplementedStateServer) NewEntry(context.Context, *NewEntryArgs) (*NewEn
 }
 func (UnimplementedStateServer) GetValue(context.Context, *GetValueArgs) (*GetValueReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValue not implemented")
+}
+func (UnimplementedStateServer) GetPrefixConfigs(context.Context, *GetPrefixConfigArgs) (*GetPrefixConfigReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPrefixConfigs not implemented")
 }
 func (UnimplementedStateServer) mustEmbedUnimplementedStateServer() {}
 
@@ -246,6 +260,24 @@ func _State_GetValue_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _State_GetPrefixConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPrefixConfigArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StateServer).GetPrefixConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/state/GetPrefixConfigs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StateServer).GetPrefixConfigs(ctx, req.(*GetPrefixConfigArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // State_ServiceDesc is the grpc.ServiceDesc for State service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -261,7 +293,11 @@ var State_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetValue",
 			Handler:    _State_GetValue_Handler,
 		},
+		{
+			MethodName: "GetPrefixConfigs",
+			Handler:    _State_GetPrefixConfigs_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/raftrpc/raft.proto",
+	Metadata: "raft.proto",
 }

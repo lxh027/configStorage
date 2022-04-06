@@ -18,6 +18,7 @@ type Client interface {
 	Get(string) string
 	Set(string, string)
 	Del(string)
+	PrefixConfig(string) map[string]string
 }
 
 type rfClient struct {
@@ -77,6 +78,12 @@ func (c *rfClient) Get(key string) string {
 	reply, _ := c.instances[index].GetValue(context.Background(), &raftrpc.GetValueArgs{Key: key})
 	c.logger.Printf("get value of key [%v: %v]", key, reply.Value)
 	return reply.Value
+}
+
+func (c *rfClient) PrefixConfig(prefix string) map[string]string {
+	index := random.ID(c.size)
+	reply, _ := c.instances[index].GetPrefixConfigs(context.Background(), &raftrpc.GetPrefixConfigArgs{Prefix: prefix})
+	return reply.Config
 }
 
 func (c *rfClient) Del(key string) {

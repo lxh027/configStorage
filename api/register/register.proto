@@ -14,15 +14,15 @@ service registerRaft {
 }
 
 service kvStorage {
-  rpc GetNamespaces(GetNamespacesAtrg)
+  rpc GetClusters(GetClusterArgs) returns (GetClusterReply);
 
   rpc NewNamespace(NewNamespaceArgs) returns (NewNamespaceReply);
 
-  rpc SetConfig(SetConfigArgs) returns (SetConfigReply);
+  rpc Commit(CommitArgs) returns (CommitReply);
 
   rpc GetConfig(GetConfigArgs) returns (GetConfigReply);
 
-  rpc DelConfig(DelConfigArgs) returns (DelConfigReply);
+  rpc GetConfigsByNamespace(GetConfigsByNamespaceArgs) returns (GetConfigsByNamespaceReply);
 }
 
 
@@ -71,15 +71,32 @@ message NewNamespaceReply {
   string Msg = 2;
 }
 
-message SetConfigArgs {
-  string Namespace = 1;
-  string PrivateKey = 2;
-  string Key = 3;
-  string Value = 4;
+message GetClusterArgs {}
+
+message GetClusterReply {
+  message Cluster {
+    string RaftID = 1;
+    string Address = 2;
+  }
+  repeated Cluster Clusters = 1;
 }
 
-message SetConfigReply {
+message CommitArgs {
+  string Namespace = 1;
+  string PrivateKey = 2;
+  repeated ConfigOp Ops = 3;
+}
+
+message CommitReply {
   bool OK = 1;
+  int64 LastCommitID = 2;
+}
+
+message ConfigOp {
+  int64 Id = 1;
+  int64 Type = 2;
+  string Key = 3;
+  string Value = 4;
 }
 
 message GetConfigArgs {
@@ -93,12 +110,12 @@ message GetConfigReply {
   string Value = 2;
 }
 
-message DelConfigArgs {
+message GetConfigsByNamespaceArgs {
   string Namespace = 1;
   string PrivateKey = 2;
-  string Key = 3;
 }
 
-message DelConfigReply {
+message GetConfigsByNamespaceReply {
   bool OK = 1;
+  map<string, string> Configs = 2;
 }

@@ -193,3 +193,10 @@ func (rf *Raft) GetValue(ctx context.Context, args *raftrpc.GetValueArgs) (reply
 	reply.Value = v
 	return reply, nil
 }
+
+func (rf *Raft) GetPrefixConfigs(ctx context.Context, args *raftrpc.GetPrefixConfigArgs) (reply *raftrpc.GetPrefixConfigReply, err error) {
+	reply = &raftrpc.GetPrefixConfigReply{}
+	v := rf.storage.PrefixAll(args.Prefix)
+	reply.Config = *v
+	return reply, nil
+}

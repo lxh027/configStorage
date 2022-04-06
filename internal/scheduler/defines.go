@@ -17,6 +17,8 @@ var NamespaceExistedErr KvError = errors.New("namespace existed")
 var NamespaceNotExistedErr KvError = errors.New("namespace not existed")
 var PrivateKeyUnPatchErr KvError = errors.New("private key not patch")
 
+var NamespaceCommittingErr KvError = errors.New("namespace is committing")
+
 type clusterStatus int
 
 const (
