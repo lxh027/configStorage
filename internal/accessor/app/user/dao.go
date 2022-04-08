@@ -46,3 +46,8 @@ func (dao *Dao) CheckUserExisted(username string) bool {
 	err := global.MysqlClient.Where("username = ?", username).First(&User{}).Error
 	return err == nil
 }
+
+func (dao *Dao) CheckUserAdmin(userID int) bool {
+	err := global.MysqlClient.Where("use_id = ? AND is_admin = 1", userID).First(&User{}).Error
+	return err == nil
+}

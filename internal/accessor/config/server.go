@@ -7,9 +7,10 @@ import (
 )
 
 type Server struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
-	Mode string `yaml:"mode"`
+	Host          string `yaml:"host"`
+	Port          string `yaml:"port"`
+	Mode          string `yaml:"mode"`
+	SchedulerAddr string `yaml:"scheduler_addr"`
 }
 
 func NewServerConfig(path string) Server {

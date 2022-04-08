@@ -4,6 +4,7 @@ import (
 	"configStorage/internal/accessor/config"
 	"configStorage/internal/accessor/db"
 	"configStorage/internal/accessor/redis"
+	"configStorage/internal/scheduler"
 	"gorm.io/gorm"
 	"path"
 )
@@ -13,6 +14,8 @@ const CodeSuccess = 0
 
 var MysqlClient *gorm.DB
 var RedisClient *redis.Client
+
+var SDBClient scheduler.Client
 
 var Log Logger
 
@@ -42,6 +45,8 @@ func Init(env string) {
 
 	MysqlClient = db.NewMysqlConn(&DatabaseCfg)
 	RedisClient = redis.NewRedisClient(&RedisCfg)
+
+	SDBClient = scheduler.NewSchedulerClient(ServerCfg.SchedulerAddr)
 
 	Log = NewLogger()
 }
