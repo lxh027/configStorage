@@ -31,6 +31,7 @@ func init() {
 
 var rafts []*Raft
 
+// TODO update test files
 func makeRaft() {
 	rafts = make([]*Raft, instanceNum)
 	for i := 0; i < instanceNum; i++ {
@@ -39,7 +40,7 @@ func makeRaft() {
 			cfg.RaftRpc = rpcConfigs[i]
 			cfg.RaftPeers = rpcConfigs
 			cfg.LogPrefix = "[raft id: %v]"
-			rafts[i] = NewRaftInstance(cfg)
+			//rafts[i] = NewRaftInstance(cfg)
 			rafts[i].Start(md5.GetRandomMd5())
 		}(i)
 	}
