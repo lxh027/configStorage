@@ -391,10 +391,10 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 			if r.setConfig(args.Namespace, op) != nil {
 				reply.LastCommitID = op.Id
 				return reply, nil
-			} else if r.delConfig(args.Namespace, op) != nil {
-				reply.LastCommitID = op.Id
-				return reply, nil
 			}
+		} else if r.delConfig(args.Namespace, op) != nil {
+			reply.LastCommitID = op.Id
+			return reply, nil
 		}
 	}
 	reply.OK = true
