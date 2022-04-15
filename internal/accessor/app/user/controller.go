@@ -47,7 +47,7 @@ func Register(c *gin.Context) {
 
 func Login(c *gin.Context) {
 	session := sessions.Default(c)
-	if v := session.Get("username"); v != nil {
+	if v := session.Get(LoginSession); v != nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user already logged in", v))
 		return
 	}
@@ -63,7 +63,10 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	session.Set("username", user.Username)
+	session.Set(LoginSession, user.Username)
+	if user.IsAdmin == Admin {
+		session.Set(AdminSession, 1)
+	}
 	session.Save()
 
 	c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeSuccess, "login success", nil))

@@ -3,7 +3,6 @@ package cluster
 import (
 	"configStorage/internal/accessor/app/user"
 	"configStorage/internal/accessor/global"
-	"errors"
 )
 
 type Service struct {
@@ -11,11 +10,7 @@ type Service struct {
 	clusterDao Dao
 }
 
-func (s *Service) FetchClusters(me int) ([]Cluster, error) {
-	if !s.userDao.CheckUserAdmin(me) {
-		return nil, errors.New("only admin permitted")
-	}
-
+func (s *Service) FetchClusters() ([]Cluster, error) {
 	cs, err := global.SDBClient.GetClusters()
 	if err != nil {
 		return nil, err
@@ -37,16 +32,10 @@ func (s *Service) GetUserClusters(userID int) ([]Cluster, error) {
 	return s.clusterDao.GetUserClusters(userID)
 }
 
-func (s *Service) AuthorizeClusters(me int, userID int, raftId string) error {
-	if !s.userDao.CheckUserAdmin(me) {
-		return errors.New("only admin permitted")
-	}
+func (s *Service) AuthorizeClusters(userID int, raftId string) error {
 	return s.clusterDao.AddUserCluster(userID, raftId)
 }
 
-func (s *Service) UnAuthorizeClusters(me int, userID int, raftId string) error {
-	if !s.userDao.CheckUserAdmin(me) {
-		return errors.New("only admin permitted")
-	}
+func (s *Service) UnAuthorizeClusters(userID int, raftId string) error {
 	return s.clusterDao.DeleteUserCluster(userID, raftId)
 }

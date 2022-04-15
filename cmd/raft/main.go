@@ -38,6 +38,7 @@ func main() {
 		RaftPort:   port,
 		ClientPort: cport,
 	}
+	log.Printf("args: %v:%v %v", args.Host, args.RaftPort, args.ClientPort)
 
 	cOpts := []grpc.DialOption{
 		grpc.WithInsecure(),

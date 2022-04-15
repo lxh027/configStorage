@@ -9,3 +9,7 @@ type UserCluster struct {
 	UserID int    `json:"user_id"`
 	RaftID string `json:"raft_id"`
 }
+
+type UserQuery struct {
+	UserID int `json:"user_id"`
+}

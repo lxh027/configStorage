@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"configStorage/internal/accessor/app/cluster"
 	"configStorage/internal/accessor/app/user"
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,14 @@ func BackendRoutes(router *gin.Engine) {
 		usr.POST("login", user.Login)
 		usr.POST("logout", user.Logout)
 		usr.POST("getUsers", user.GetUsers)
+	}
+
+	clt := router.Group("cluster")
+	{
+		clt.POST("getAllClusters", cluster.GetAllCluster)
+		clt.POST("getUserClusters", cluster.GetUserCluster)
+		clt.POST("authUserCluster", cluster.AuthUserCluster)
+		clt.POST("unAuthUserCluster", cluster.UnAuthUserCluster)
 	}
 
 	//router.StaticFS("/admin", http.Dir("./web"))

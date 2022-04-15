@@ -303,7 +303,7 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNamespaceArgs) (reply *register.NewNamespaceReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	reply.OK = false
+	reply = &register.NewNamespaceReply{OK: false}
 
 	if _, ok := r.namespace[args.Name]; ok {
 		return reply, NamespaceExistedErr
@@ -322,7 +322,9 @@ func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNam
 func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClusterArgs) (reply *register.GetClusterReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	reply.Clusters = []*register.GetClusterReply_Cluster{}
+	reply = &register.GetClusterReply{
+		Clusters: make([]*register.GetClusterReply_Cluster, 0),
+	}
 	for raftID, cluster := range r.clusters {
 		addr := ""
 		for _, instance := range cluster.raftCfg {
@@ -340,7 +342,7 @@ func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClus
 func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfigArgs) (reply *register.GetConfigReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	reply.OK = false
+	reply = &register.GetConfigReply{OK: false}
 	var namespace namespace
 	ok := true
 	if namespace, ok = r.namespace[args.Namespace]; !ok {
@@ -357,7 +359,7 @@ func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfig
 func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *register.GetConfigsByNamespaceArgs) (reply *register.GetConfigsByNamespaceReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	reply.OK = false
+	reply = &register.GetConfigsByNamespaceReply{OK: false}
 	var namespace namespace
 	ok := true
 	if namespace, ok = r.namespace[args.Namespace]; !ok {
@@ -374,8 +376,7 @@ func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *regist
 func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) (reply *register.CommitReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	reply.OK = false
-	reply.LastCommitID = args.Ops[0].Id
+	reply = &register.CommitReply{OK: false, LastCommitID: args.Ops[0].Id}
 	if r.namespace[args.Namespace].status {
 		return reply, NamespaceCommittingErr
 	}
@@ -438,7 +439,7 @@ func (r *RegisterCenter) getConn(raftId string) {
 
 	for times := 3; times != 0; times-- {
 		time.Sleep(10 * time.Second)
-		r.logger.Printf("connect with raft instances %v time...", 4-times)
+		r.logger.Printf("connect with raft instances %v %v time...", cfg.Addresses, 4-times)
 		if cluster.client = raft.NewRaftClient(cfg); cluster != nil {
 			break
 		}
