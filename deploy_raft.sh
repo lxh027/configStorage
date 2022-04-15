@@ -48,3 +48,5 @@ docker run -itd \
   -e cpt=3003 \
   --name raft_peer3 \
   raft_peer:$ver
+
+rm ./Dockerfile

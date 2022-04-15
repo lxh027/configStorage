@@ -26,3 +26,7 @@ func (s *Service) AddUser(user User) bool {
 	}
 	return true
 }
+
+func (s *Service) GetUsers(username string, offset, limit int) ([]User, error) {
+	return s.userDao.GetUsersByName(username, limit, offset)
+}

@@ -26,7 +26,8 @@ func (dao *Dao) GetUserByID(id int) (User, error) {
 
 func (dao *Dao) GetUsersByName(username string, limit int, offset int) ([]User, error) {
 	var users []User
-	err := global.MysqlClient.Where("username LIKE %?%", username).
+	err := global.MysqlClient.Select([]string{"id", "username", "is_admin"}).
+		Where(`username LIKE "%` + username + `%"`).
 		Offset(offset).Limit(limit).Find(&users).Error
 	return users, err
 }

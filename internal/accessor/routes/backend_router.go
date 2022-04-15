@@ -11,6 +11,7 @@ func BackendRoutes(router *gin.Engine) {
 		usr.POST("register", user.Register)
 		usr.POST("login", user.Login)
 		usr.POST("logout", user.Logout)
+		usr.POST("getUsers", user.GetUsers)
 	}
 
 	//router.StaticFS("/admin", http.Dir("./web"))

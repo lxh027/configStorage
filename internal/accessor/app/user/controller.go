@@ -12,6 +12,25 @@ var (
 	userService Service
 )
 
+func GetUsers(c *gin.Context) {
+	var query userQuery
+	if c.ShouldBind(&query) != nil {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "param bind error", nil))
+		return
+	}
+
+	var users []User
+	var err error
+	if users, err = userService.GetUsers(query.Username, query.PageSize*(query.PageIndex-1), query.PageSize); err != nil {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, err.Error(), nil))
+		return
+	}
+	c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeSuccess, "ok", map[string]interface{}{
+		"count": len(users),
+		"users": users,
+	}))
+}
+
 func Register(c *gin.Context) {
 	var user User
 	if c.ShouldBind(&user) != nil {
