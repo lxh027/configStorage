@@ -31,6 +31,20 @@ func GetUsers(c *gin.Context) {
 	}))
 }
 
+func SetAdmin(c *gin.Context) {
+	var user User
+	if c.ShouldBind(&user) != nil {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "param bind error", nil))
+		return
+	}
+
+	if !userService.SetAdmin(user.ID) {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "set user admin error", nil))
+		return
+	}
+	c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeSuccess, "ok", nil))
+}
+
 func Register(c *gin.Context) {
 	var user User
 	if c.ShouldBind(&user) != nil {

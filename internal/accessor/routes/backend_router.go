@@ -14,6 +14,7 @@ func BackendRoutes(router *gin.Engine) {
 		usr.POST("login", user.Login)
 		usr.POST("logout", user.Logout)
 		usr.POST("getUsers", user.GetUsers)
+		usr.POST("setAdmin", user.SetAdmin)
 	}
 
 	clt := router.Group("cluster")
@@ -28,6 +29,7 @@ func BackendRoutes(router *gin.Engine) {
 	{
 		name.POST("getUserNamespaces", namespace.GetUserNamespaces)
 		name.POST("newNamespace", namespace.NewNamespace)
+		name.POST("setAuth", namespace.SetAuth)
 	}
 
 	//router.StaticFS("/admin", http.Dir("./web"))

@@ -30,3 +30,7 @@ func (s *Service) AddUser(user User) bool {
 func (s *Service) GetUsers(username string, offset, limit int) ([]User, error) {
 	return s.userDao.GetUsersByName(username, limit, offset)
 }
+
+func (s *Service) SetAdmin(userID int) bool {
+	return s.userDao.SetAdmin(userID)
+}

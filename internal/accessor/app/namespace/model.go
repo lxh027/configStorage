@@ -29,3 +29,9 @@ type NewNamespaceQuery struct {
 	Name   string `json:"name"`
 	RaftID string `json:"raft_id"`
 }
+
+type AuthQuery struct {
+	NamespaceID int `json:"namespace_id"`
+	UserID      int `json:"user_id"`
+	Type        int `json:"type"`
+}

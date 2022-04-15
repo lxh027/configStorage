@@ -11,7 +11,7 @@ func (dao *Dao) AddUser(user User) error {
 }
 
 func (dao *Dao) UpdatePassword(id int, password string) error {
-	return global.MysqlClient.Where("id = ?", id).Update("password", password).Error
+	return global.MysqlClient.Model(User{}).Where("id = ?", id).Update("password", password).Error
 }
 
 func (dao *Dao) DelUser(id int) error {
@@ -51,5 +51,10 @@ func (dao *Dao) CheckUserExisted(username string) bool {
 
 func (dao *Dao) CheckUserAdmin(userID int) bool {
 	err := global.MysqlClient.Where("use_id = ? AND is_admin = 1", userID).First(&User{}).Error
+	return err == nil
+}
+
+func (dao *Dao) SetAdmin(userID int) bool {
+	err := global.MysqlClient.Model(User{}).Where("id = ?", userID).Update("is_admin", 1).Error
 	return err == nil
 }
