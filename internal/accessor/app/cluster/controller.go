@@ -33,14 +33,18 @@ func GetAllCluster(c *gin.Context) {
 }
 
 func GetUserCluster(c *gin.Context) {
-	var query UserQuery
-	if c.ShouldBind(&query) != nil {
-		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "param bind error", nil))
+	session := sessions.Default(c)
+	var userId int
+	if v := session.Get(user.LoginSession); v == nil {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user not logged in", v))
 		return
+	} else {
+		userId = v.(int)
 	}
+
 	var clusters []Cluster
 	var err error
-	if clusters, err = clusterService.GetUserClusters(query.UserID); err != nil {
+	if clusters, err = clusterService.GetUserClusters(userId); err != nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, err.Error(), nil))
 		return
 	}
@@ -56,7 +60,7 @@ func AuthUserCluster(c *gin.Context) {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user not admin", v))
 		return
 	}
-	
+
 	var query UserCluster
 	if c.ShouldBind(&query) != nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "param bind error", nil))

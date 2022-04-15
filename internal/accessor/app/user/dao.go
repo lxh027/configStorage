@@ -38,9 +38,10 @@ func (dao *Dao) GetAllUsers(limit int, offset int) ([]User, error) {
 	return users, err
 }
 
-func (dao *Dao) CheckUserPassword(username string, password string) bool {
-	err := global.MysqlClient.Where("username = ? AND password = ?", username, password).First(&User{}).Error
-	return err == nil
+func (dao *Dao) CheckUserPassword(username string, password string) (int, bool) {
+	var user User
+	err := global.MysqlClient.Where("username = ? AND password = ?", username, password).First(&user).Error
+	return user.ID, err == nil
 }
 
 func (dao *Dao) CheckUserExisted(username string) bool {

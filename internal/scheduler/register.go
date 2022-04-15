@@ -83,12 +83,13 @@ type namespace struct {
 
 func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 	return &RegisterCenter{
-		s:        NewMapStorage(),
-		cfg:      config,
-		logger:   logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
-		clusters: make(map[string]*raftCluster),
-		raftIds:  make([]string, 0),
-		size:     0,
+		s:         NewMapStorage(),
+		cfg:       config,
+		logger:    logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
+		clusters:  make(map[string]*raftCluster),
+		raftIds:   make([]string, 0),
+		namespace: make(map[string]namespace),
+		size:      0,
 	}
 }
 

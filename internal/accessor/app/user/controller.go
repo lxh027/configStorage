@@ -58,12 +58,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if !userService.Login(user) {
+	var userID int
+	var ok bool
+	if userID, ok = userService.Login(user); !ok {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user or password error", nil))
 		return
 	}
 
-	session.Set(LoginSession, user.Username)
+	session.Set(LoginSession, userID)
 	if user.IsAdmin == Admin {
 		session.Set(AdminSession, 1)
 	}
