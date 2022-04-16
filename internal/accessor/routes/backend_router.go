@@ -2,6 +2,7 @@ package routes
 
 import (
 	"configStorage/internal/accessor/app/cluster"
+	"configStorage/internal/accessor/app/log"
 	"configStorage/internal/accessor/app/namespace"
 	"configStorage/internal/accessor/app/user"
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,14 @@ func BackendRoutes(router *gin.Engine) {
 		name.POST("getUserNamespaces", namespace.GetUserNamespaces)
 		name.POST("newNamespace", namespace.NewNamespace)
 		name.POST("setAuth", namespace.SetAuth)
+	}
+
+	lg := router.Group("log")
+	{
+		lg.POST("getAllLogs", log.GetAllLogs)
+		lg.POST("newLog", log.NewLog)
+		lg.POST("delLog", log.DelLog)
+		lg.POST("commit", log.Commit)
 	}
 
 	router.StaticFS("/admin", http.Dir("./web"))

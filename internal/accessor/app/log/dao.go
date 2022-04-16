@@ -16,23 +16,33 @@ func (dao *Dao) AddLog(userID, namespaceID int, key, value string, tp int) error
 	return global.MysqlClient.Create(&log).Error
 }
 
+func (dao *Dao) DelLog(logID int) error {
+	return global.MysqlClient.Where("id = ?", logID).Delete(&Log{}).Error
+}
+
 func (dao *Dao) GetLogs(namespaceID, offset, limit int) ([]Log, error) {
 	var logs []Log
-	err := global.MysqlClient.Where("namespace_id = ?", namespaceID).
+	err := global.MysqlClient.Where("namespace_id = ?", namespaceID).Order("id desc").
 		Offset(offset).Limit(limit).Find(&logs).Error
 	return logs, err
 }
 
-func (dao *Dao) GetLogsForRange(namespaceID int, lower, upper int) []Log {
+func (dao *Dao) GetLogByID(logID int) (Log, error) {
+	var log Log
+	err := global.MysqlClient.Where("id = ?", logID).First(&log).Error
+	return log, err
+}
+
+func (dao *Dao) GetLogsForRange(namespaceID int, lower, upper int) ([]Log, error) {
 	var logs []Log
-	global.MysqlClient.
+	err := global.MysqlClient.
 		Where("namespace_id = ? AND id >= ? AND id <= ?", namespaceID, lower, upper).
-		Find(&logs)
-	return logs
+		Find(&logs).Error
+	return logs, err
 }
 
 func (dao *Dao) Commit(namespaceID, lower, upper int) error {
-	return global.MysqlClient.
+	return global.MysqlClient.Model(&Log{}).
 		Where("namespace_id = ? AND id >= ? AND id <= ? AND status = ?", namespaceID, lower, upper, Uncommitted).
 		Update("status", Committed).Error
 }
