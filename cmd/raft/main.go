@@ -15,14 +15,12 @@ import (
 )
 
 func main() {
-	var env string
-	var port string
-	var cport string
-	var raftId string
+	var env, port, cport, raftId, host string
 	flag.StringVar(&env, "env", "dev", "配置环境")
 	flag.StringVar(&port, "raft-port", "2000", "raft端口")
 	flag.StringVar(&cport, "client-port", "3000", "raft client 端口")
 	flag.StringVar(&raftId, "raft-id", "raft001", "raft cluster ID")
+	flag.StringVar(&host, "raft-host", "127.0.0.1", "raft host")
 	flag.Parse()
 
 	p := path.Join("./config", env, "raft.yml")
@@ -34,7 +32,7 @@ func main() {
 	args := register.RegisterRaftArgs{
 		Uid:        uid,
 		RaftID:     raftId,
-		Host:       raftConfig.Host,
+		Host:       host,
 		RaftPort:   port,
 		ClientPort: cport,
 	}

@@ -14,4 +14,4 @@ RUN go mod tidy \
 
 EXPOSE 2000 3000
 
-ENTRYPOINT ["/bin/sh", "-c", "./cmd/raft/raft_peer -env dev -raft-id $RFID -raft-port $RFPT -client-port $CPT >> logs/cluster0-1.log"]
+ENTRYPOINT ["/bin/sh", "-c", "./cmd/raft/raft_peer -env dev -raft-id $RFID -raft-host $RFHOST -raft-port $RFPT -client-port $CPT >> logs/cluster0-1.log"]

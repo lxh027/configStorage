@@ -5,6 +5,7 @@
 
 ver=$(cat /proc/sys/kernel/random/uuid | md5sum |cut -c 1-12)
 raft_id="raft000"
+raft_host="172.17.0.1"
 
 if [[ -n $(docker ps -a | grep raft_peer1) ]]; then
   docker stop raft_peer1 && docker rm raft_peer1
@@ -31,6 +32,7 @@ docker run -itd \
   -p 3001:3000 \
   -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
+  -e RFHOST=$raft_host \
   -e RFPT="2001" \
   -e CPT="3001" \
   --name raft_peer1 \
@@ -41,6 +43,7 @@ docker run -itd \
   -p 3002:3000 \
   -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
+  -e RFHOST=$raft_host \
   -e RFPT="2002" \
   -e CPT="3002" \
   --name raft_peer2 \
@@ -52,6 +55,7 @@ docker run -itd \
   -p 3003:3000 \
   -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
+  -e RFHOST=$raft_host \
   -e RFPT="2003" \
   -e CPT="3003" \
   --name raft_peer3 \
