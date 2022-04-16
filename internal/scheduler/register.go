@@ -377,7 +377,12 @@ func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *regist
 func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) (reply *register.CommitReply, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	r.logger.Printf("start committing...namespace: %v, ops: %v", args.Namespace, args.Ops)
 	reply = &register.CommitReply{OK: false, LastCommitID: args.Ops[0].Id}
+
+	if len(args.Ops) == 0 {
+		return reply, nil
+	}
 	if r.namespace[args.Namespace].status {
 		return reply, NamespaceCommittingErr
 	}
@@ -390,11 +395,11 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 
 	for _, op := range args.Ops {
 		if op.Type == 0 {
-			if r.setConfig(args.Namespace, op) != nil {
+			if r.setConfig(r.namespace[args.Namespace].raftId, op) != nil {
 				reply.LastCommitID = op.Id
 				return reply, nil
 			}
-		} else if r.delConfig(args.Namespace, op) != nil {
+		} else if r.delConfig(r.namespace[args.Namespace].raftId, op) != nil {
 			reply.LastCommitID = op.Id
 			return reply, nil
 		}
@@ -405,18 +410,12 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 }
 
 func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	r.clusters[name].client.Set(args.Key, args.Value)
 
 	return nil
 }
 
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	r.clusters[name].client.Del(args.Key)
 
 	return nil
@@ -437,6 +436,7 @@ func (r *RegisterCenter) getConn(raftId string) {
 		address := fmt.Sprintf("%s:%s", rfCfg.host, rfCfg.clientPort)
 		cfg.Addresses = append(cfg.Addresses, address)
 	}
+	r.logger.Printf("client cfg: %v", cfg)
 
 	for times := 3; times != 0; times-- {
 		time.Sleep(10 * time.Second)
