@@ -10,7 +10,8 @@ type Namespace struct {
 
 type WithAuth struct {
 	Namespace
-	Type int `json:"type"`
+	Type     int    `json:"type"`
+	Username string `json:"username"`
 }
 
 type UserNamespace struct {
@@ -31,7 +32,7 @@ type NewNamespaceQuery struct {
 }
 
 type AuthQuery struct {
-	NamespaceID int `json:"namespace_id"`
-	UserID      int `json:"user_id"`
-	Type        int `json:"type"`
+	NamespaceID int    `json:"namespace_id"`
+	UserName    string `json:"username"`
+	Type        int    `json:"type"`
 }

@@ -24,6 +24,14 @@ func (dao *Dao) GetUserByID(id int) (User, error) {
 	return user, err
 }
 
+func (dao *Dao) GetAUserByName(username string) (User, error) {
+	var user User
+	err := global.MysqlClient.Select([]string{"id", "username", "is_admin"}).
+		Where(`username = ?`, username).
+		First(&user).Error
+	return user, err
+}
+
 func (dao *Dao) GetUsersByName(username string, limit int, offset int) ([]User, error) {
 	var users []User
 	err := global.MysqlClient.Select([]string{"id", "username", "is_admin"}).

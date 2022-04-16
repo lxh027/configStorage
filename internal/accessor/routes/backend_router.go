@@ -5,6 +5,7 @@ import (
 	"configStorage/internal/accessor/app/namespace"
 	"configStorage/internal/accessor/app/user"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func BackendRoutes(router *gin.Engine) {
@@ -32,5 +33,5 @@ func BackendRoutes(router *gin.Engine) {
 		name.POST("setAuth", namespace.SetAuth)
 	}
 
-	//router.StaticFS("/admin", http.Dir("./web"))
+	router.StaticFS("/admin", http.Dir("./web"))
 }

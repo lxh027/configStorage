@@ -26,8 +26,9 @@ func (dao *Dao) NewNamespace(userId int, name string, raftID string, privateKey 
 func (dao *Dao) GetUserNamespace(userId int, name string, offset, limit int) ([]WithAuth, error) {
 	var namespaces []WithAuth
 	err := global.MysqlClient.Model(Namespace{}).
-		Select("namespace.id, namespace.name, namespace.raft_id, namespace.user_id, namespace.private_key, user_namespace.type").
+		Select("namespace.id, namespace.name, namespace.raft_id, namespace.user_id, namespace.private_key, user_namespace.type, user.username").
 		Joins("join user_namespace on namespace.id = user_namespace.namespace_id").
+		Joins("join user on user.id = user_namespace.user_id").
 		Where("user_namespace.user_id = ? AND namespace.name LIKE '%"+name+"%'", userId).
 		Limit(limit).Offset(offset).
 		Find(&namespaces).

@@ -1,6 +1,7 @@
 package namespace
 
 import (
+	"configStorage/internal/accessor/app/user"
 	"configStorage/internal/accessor/global"
 	"configStorage/tools/random"
 	"errors"
@@ -8,6 +9,7 @@ import (
 
 type Service struct {
 	namespaceDao Dao
+	userDao      user.Dao
 }
 
 func (s *Service) NewNamespace(userId int, name string, raftID string) error {
@@ -24,11 +26,18 @@ func (s *Service) UpdateNamespace() {}
 // DeleteNamespace TODO deleteNamespace
 func (s *Service) DeleteNamespace() {}
 
-func (s *Service) AuthUserPrivileges(me int, userID int, namespaceID int, tp int) error {
+func (s *Service) AuthUserPrivileges(me int, username string, namespaceID int, tp int) error {
 	if s.namespaceDao.CheckPriv(me, namespaceID) != Owner {
 		return errors.New("not namespace's owner")
 	}
-	return s.namespaceDao.SetUserPrivileges(userID, namespaceID, tp)
+	u, err := s.userDao.GetAUserByName(username)
+	if err != nil {
+		return err
+	}
+	if me == u.ID {
+		return errors.New("can't auth self")
+	}
+	return s.namespaceDao.SetUserPrivileges(u.ID, namespaceID, tp)
 }
 
 func (s *Service) GetUserNamespaces(userID int, name string, offset, limit int) ([]WithAuth, error) {

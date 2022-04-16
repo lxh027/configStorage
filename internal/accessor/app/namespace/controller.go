@@ -82,7 +82,7 @@ func SetAuth(c *gin.Context) {
 		return
 	}
 
-	if err := namespaceService.AuthUserPrivileges(userId, query.UserID, query.NamespaceID, query.Type); err != nil {
+	if err := namespaceService.AuthUserPrivileges(userId, query.UserName, query.NamespaceID, query.Type); err != nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, err.Error(), nil))
 		return
 	}
