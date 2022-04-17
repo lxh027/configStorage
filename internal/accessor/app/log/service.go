@@ -18,7 +18,27 @@ func (s *Service) GetLogs(userID int, namespaceID int, offset, limit int) ([]Log
 		return nil, errors.New("not authorized")
 	}
 	return s.logDao.GetLogs(namespaceID, offset, limit)
+}
 
+func (s *Service) GetConfigs(userID int, namespaceID int) ([]KV, error) {
+	priv := s.namespaceDao.CheckPriv(userID, namespaceID)
+	if priv == namespace.Abandon {
+		return nil, errors.New("not authorized")
+	}
+	np := s.namespaceDao.GetNamespace(namespaceID)
+	if np == nil {
+		return nil, errors.New("namespace not existed")
+	}
+
+	cfgs, err := global.SDBClient.GetConfigByNamespace(np.Name, np.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	kvs := make([]KV, 0)
+	for k, v := range cfgs {
+		kvs = append(kvs, KV{k, v})
+	}
+	return kvs, nil
 }
 
 func (s *Service) AddLog(userID int, namespaceID int, key string, value string, tp int) error {

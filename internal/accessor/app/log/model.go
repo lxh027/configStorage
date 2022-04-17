@@ -15,3 +15,8 @@ type FetchQuery struct {
 	PageIndex   int `json:"pageIndex"`
 	PageSize    int `json:"pageSize"`
 }
+
+type KV struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}

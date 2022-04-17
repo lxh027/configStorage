@@ -418,7 +418,7 @@ func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
 
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
 	raftID := r.namespace[name].raftId
-	r.clusters[raftID].client.Del(name + "." + args.Key)
+	r.clusters[raftID].client.Del(args.Key)
 
 	return nil
 }

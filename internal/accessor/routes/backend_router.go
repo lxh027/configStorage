@@ -42,5 +42,10 @@ func BackendRoutes(router *gin.Engine) {
 		lg.POST("commit", log.Commit)
 	}
 
+	cfg := router.Group("config")
+	{
+		cfg.POST("getAllConfigs", log.GetALlConfigs)
+	}
+
 	router.StaticFS("/admin", http.Dir("./web"))
 }
