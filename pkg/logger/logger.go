@@ -6,6 +6,8 @@ TODO upload logs to monitor
 */
 
 import (
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	"go.uber.org/zap"
 	"log"
 	"strings"
 )
@@ -13,6 +15,15 @@ import (
 type Logger struct {
 	params []interface{}
 	prefix string
+}
+
+func NewZapLogger() *zap.Logger {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("failed to initialize zap logger: %v", err)
+	}
+	grpc_zap.ReplaceGrpcLoggerV2(logger)
+	return logger
 }
 
 func NewLogger(params []interface{}, prefix string) *Logger {

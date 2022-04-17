@@ -8,6 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"net"
 	"sync"
@@ -94,7 +97,14 @@ func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
 }
 
 func (r *RegisterCenter) Start() {
-	var sOpts []grpc.ServerOption
+	sOpts := []grpc.ServerOption{
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(logger.NewZapLogger()))),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_recovery.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(logger.NewZapLogger()))),
+	}
 
 	go func() {
 		address := fmt.Sprintf("%s:%s", r.cfg.Host, r.cfg.Port)

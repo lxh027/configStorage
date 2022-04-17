@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/HuyuYasumi/kvuR/labgob"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
 	"net"
 	"strings"
@@ -58,13 +61,19 @@ func (rf *Raft) Start(md5 string) {
 	if err != nil {
 		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
-	var sOpts []grpc.ServerOption
+	sOpts := []grpc.ServerOption{
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(logger.NewZapLogger()))),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_recovery.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(logger.NewZapLogger()))),
+	}
 
 	rf.rpcServer = grpc.NewServer(sOpts...)
 	raftrpc.RegisterRaftServer(rf.rpcServer, rf)
 
-	var cOpts []grpc.ServerOption
-	rf.stateServer = grpc.NewServer(cOpts...)
+	rf.stateServer = grpc.NewServer(sOpts...)
 	raftrpc.RegisterStateServer(rf.stateServer, rf)
 
 	// state server start
