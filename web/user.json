@@ -1,0 +1,19 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "count": 2,
+    "users": [
+      {
+        "id": 1,
+        "username": "lxh001",
+        "is_admin": 1
+      },
+      {
+        "id": 2,
+        "username": "lxh002",
+        "is_admin": 0
+      }
+    ]
+  }
+}

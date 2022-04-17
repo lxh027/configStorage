@@ -1,0 +1,1 @@
+import{s}from"./request.a57216d8.js";const t=t=>s({url:"/cluster/getUserClusters",method:"post",data:t}),e=()=>s({url:"/cluster/getAllClusters",method:"post"}),r=t=>s({url:"/cluster/authUserCluster",method:"post",data:t}),u=t=>s({url:"/cluster/unAuthUserCluster",method:"post",data:t});export{t as a,e as g,r as s,u};

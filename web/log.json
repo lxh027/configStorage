@@ -1,0 +1,33 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "count": 3,
+    "log": [
+      {
+        "id": 1,
+        "type": 0,
+        "key": "key1",
+        "value": "value1",
+        "username": "lxh001",
+        "status": 1
+      },
+      {
+        "id": 1,
+        "type": 1,
+        "key": "key2",
+        "value": "value2",
+        "username": "lxh001",
+        "status": 0
+      },
+      {
+        "id": 1,
+        "type": 0,
+        "key": "key3",
+        "value": "value3",
+        "username": "lxh001",
+        "status": 1
+      }
+    ]
+  }
+}

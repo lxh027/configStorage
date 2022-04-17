@@ -1,0 +1,41 @@
+{
+  "code": 0,
+  "msg": "ok",
+  "data": {
+    "namespaces": [
+      {
+        "id": 1,
+        "name": "namespace1",
+        "owner": "lxh",
+        "raft_id": "raft001",
+        "private_key": "a98fdjhkjashfgasdg1jkhsfa",
+        "permission": 2
+      },
+      {
+        "id": 2,
+        "name": "namespace2",
+        "owner": "lxh001",
+        "raft_id": "raft001",
+        "private_key": "a98fdjhkasgasgdg1jkhsfa",
+        "permission": 1
+      },
+      {
+        "id": 3,
+        "name": "namespace3",
+        "owner": "lxh",
+        "raft_id": "raft002",
+        "private_key": "a98fdjrfhdssdg1jkhsfa",
+        "permission": 0
+      },
+      {
+        "id": 4,
+        "name": "namespace4",
+        "owner": "lxh",
+        "raft_id": "raft002",
+        "private_key": "a98fdjfghsegrdg1jkhsfa",
+        "permission": 2
+      }
+    ],
+    "count": 4
+  }
+}
