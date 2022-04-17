@@ -30,7 +30,6 @@ docker build -t raft_peer:$ver .
 docker run -itd \
   -p 2001:2000 \
   -p 3001:3000 \
-  -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
   -e RFHOST=$raft_host \
   -e RFPT="2001" \
@@ -41,7 +40,6 @@ docker run -itd \
 docker run -itd \
   -p 2002:2000 \
   -p 3002:3000 \
-  -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
   -e RFHOST=$raft_host \
   -e RFPT="2002" \
@@ -53,7 +51,6 @@ docker run -itd \
 docker run -itd \
   -p 2003:2000 \
   -p 3003:3000 \
-  -v /home/lxh001/Workspace/go/configStorage/logs:/app/logs \
   -e RFID=$raft_id \
   -e RFHOST=$raft_host \
   -e RFPT="2003" \

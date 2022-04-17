@@ -1,4 +1,4 @@
 host: 0.0.0.0
 port: 5000
 mode: debug
-scheduler_addr: '127.0.0.1:2888'
+scheduler_addr: '172.17.0.1:2888'
