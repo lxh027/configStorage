@@ -395,11 +395,11 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 
 	for _, op := range args.Ops {
 		if op.Type == 0 {
-			if r.setConfig(r.namespace[args.Namespace].raftId, op) != nil {
+			if r.setConfig(args.Namespace, op) != nil {
 				reply.LastCommitID = op.Id
 				return reply, nil
 			}
-		} else if r.delConfig(r.namespace[args.Namespace].raftId, op) != nil {
+		} else if r.delConfig(args.Namespace, op) != nil {
 			reply.LastCommitID = op.Id
 			return reply, nil
 		}
@@ -410,13 +410,15 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 }
 
 func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
-	r.clusters[name].client.Set(args.Key, args.Value)
+	raftID := r.namespace[name].raftId
+	r.clusters[raftID].client.Set(name+"."+args.Key, args.Value)
 
 	return nil
 }
 
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
-	r.clusters[name].client.Del(args.Key)
+	raftID := r.namespace[name].raftId
+	r.clusters[raftID].client.Del(name + "." + args.Key)
 
 	return nil
 }
