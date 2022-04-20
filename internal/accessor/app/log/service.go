@@ -88,6 +88,9 @@ func (s *Service) Commit(userID int, namespaceId int, logId int, lastCommitId in
 			Value: item.Value,
 		})
 	}
+	if len(logs) == 0 {
+		return errors.New("no logs to commit")
+	}
 	id, err := global.SDBClient.Commit(np.Name, np.PrivateKey, logs)
 	if err != nil {
 		global.Log.Printf("commit log error for namespace %v: %v", namespaceId, err.Error())
@@ -106,12 +109,12 @@ func (s *Service) Restore(userID int, namespaceId int, logID int, lastCommitId i
 	}
 	// TODO lock
 
-	l, err := s.logDao.GetLogsForRange(namespaceId, logID+1, lastCommitId)
+	l, err := s.logDao.GetLogsForRange(namespaceId, logID, lastCommitId)
 	if err != nil {
 		return err
 	}
 	logs := make([]scheduler.Log, 0)
-	for i := len(l); i >= 0; i-- {
+	for i := len(l) - 1; i >= 0; i-- {
 		logs = append(logs, scheduler.Log{
 			ID:    l[i].ID,
 			Type:  1 - l[i].Type,
@@ -119,11 +122,14 @@ func (s *Service) Restore(userID int, namespaceId int, logID int, lastCommitId i
 			Value: l[i].Value,
 		})
 	}
+	if len(logs) == 0 {
+		return errors.New("no logs to commit")
+	}
 	id, err := global.SDBClient.Commit(np.Name, np.PrivateKey, logs)
 	if err != nil {
 		global.Log.Printf("restore log error for namespace %v: %v", namespaceId, err.Error())
 	}
-	return s.logDao.Commit(namespaceId, id+1, lastCommitId)
+	return s.logDao.Restore(namespaceId, id, lastCommitId)
 }
 
 func (s *Service) LastCommittedID(namespaceID int) int {

@@ -48,7 +48,7 @@ func (dao *Dao) Commit(namespaceID, lower, upper int) error {
 }
 
 func (dao *Dao) Restore(namespaceID, lower, upper int) error {
-	return global.MysqlClient.
+	return global.MysqlClient.Model(&Log{}).
 		Where("namespace_id = ? AND id >= ? AND id <= ? AND status = ?", namespaceID, lower, upper, Committed).
 		Update("status", Uncommitted).Error
 }
