@@ -3,21 +3,26 @@ package raft
 import (
 	"bytes"
 	"configStorage/api/raftrpc"
+	"configStorage/pkg/config"
 	"configStorage/pkg/logger"
+	"configStorage/pkg/redis"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/HuyuYasumi/kvuR/labgob"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/shirou/gopsutil/mem"
 	"google.golang.org/grpc"
 	"net"
+	"runtime"
 	"strings"
 	"time"
 )
 
 // NewRaftInstance start a new Raft instance and return a pointer
-func NewRaftInstance(rpcConfig Config, rfConfig RfConfig) *Raft {
+func NewRaftInstance(rpcConfig Config, rfConfig RfConfig, redisConfig config.Redis) *Raft {
 	rf := Raft{
 		id:           rpcConfig.RaftRpc.ID,
 		leaderID:     rpcConfig.RaftRpc.ID,
@@ -33,6 +38,8 @@ func NewRaftInstance(rpcConfig Config, rfConfig RfConfig) *Raft {
 		logs:         make([]Log, 0),
 		logger:       logger.NewLogger([]interface{}{rpcConfig.RaftRpc.ID}, rpcConfig.LogPrefix),
 		persister:    NewPersister(),
+		redisClient:  nil,
+		redisCfg:     redisConfig,
 		cfg:          rpcConfig,
 		raftCfg:      rfConfig,
 		storage:      NewRaftStorage(),
@@ -75,6 +82,18 @@ func (rf *Raft) Start(md5 string) {
 
 	rf.stateServer = grpc.NewServer(sOpts...)
 	raftrpc.RegisterStateServer(rf.stateServer, rf)
+
+	// connect redis
+	go func() {
+		for {
+			var redisErr error
+			rf.redisClient, redisErr = redis.NewRedisClient(&rf.redisCfg)
+			if redisErr == nil {
+				break
+			}
+			rf.logger.Printf("error connecting redis: %v", redisErr.Error())
+		}
+	}()
 
 	// state server start
 	go func() {
@@ -255,6 +274,14 @@ func (rf *Raft) reportStatus() {
 			return
 		}
 		rf.logger.Printf("{ state: %v, term: %d, index: %d }", rf.state, rf.currentTerm, rf.currentIndex)
+		rm := rf.getStatus()
+		rmJson, _ := json.Marshal(rm)
+		if rf.redisClient != nil {
+			err := rf.redisClient.Publish(ReportChan, rmJson)
+			if err != nil {
+				rf.logger.Printf("publish peer status error: %v", err.Error())
+			}
+		}
 		rf.mu.Unlock()
 		time.Sleep(StatusLoggerTimeout)
 	}
@@ -366,6 +393,28 @@ func (rf *Raft) readPersist() {
 		fmt.Println("Decode Error")
 	}
 	rf.storage.Load(&sp)
+}
+
+func (rf *Raft) getStatus() ReportMsg {
+	machineMem, _ := mem.VirtualMemory()
+	var curMem runtime.MemStats
+	runtime.ReadMemStats(&curMem)
+	rm := ReportMsg{
+		RaftID:          rf.raftCfg.RaftID,
+		Id:              int(rf.id),
+		IsLeader:        rf.leaderID == rf.id,
+		Status:          rf.state,
+		CfgVersion:      rf.cfgVersion,
+		CurrentTerm:     rf.currentTerm,
+		CurrentIndex:    rf.currentIndex,
+		CommitIndex:     rf.commitIndex,
+		MemoryTotal:     machineMem.Total,
+		MemoryUsed:      machineMem.Used,
+		MemoryAvailable: machineMem.Available,
+		MemoryCur:       curMem.Alloc,
+		Now:             time.Now(),
+	}
+	return rm
 }
 
 /*func (raft *Config) getConn(id int) *grpc.ClientConn {

@@ -3,6 +3,7 @@ package main
 import (
 	"configStorage/api/register"
 	"configStorage/internal/raft"
+	"configStorage/pkg/config"
 	"configStorage/tools/md5"
 	"context"
 	"encoding/json"
@@ -24,7 +25,11 @@ func main() {
 	flag.Parse()
 
 	p := path.Join("./config", env, "raft.yml")
+	redisP := path.Join("./config", env, "redis.yml")
 	raftConfig := raft.NewRaftRpcConfig(p)
+	redisConfig := config.NewRedisConfig(redisP)
+
+	raftConfig.RaftID = raftId
 
 	// generate a uid for instance
 	uid := md5.GetRandomMd5()
@@ -60,7 +65,7 @@ func main() {
 	var cfg raft.Config
 	// wait for other raft instances to register
 	md5 := ""
-	for times := 5; times != 0; times-- {
+	for {
 		time.Sleep(time.Second)
 		// get raft registration
 		reply, err := client.GetRaftRegistrations(context.Background(), &register.GetRaftRegistrationsArgs{
@@ -78,11 +83,13 @@ func main() {
 			if err != nil {
 				log.Fatalf("parse config error: %v", err.Error())
 			}
+			break
 		}
 	}
 	if md5 == "" {
 		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, "connect register timeout")
 	}
+	time.Sleep(3 * time.Second)
 
 	defer func(idx int64, raftID string, uid string) {
 		_, err = client.UnregisterRaft(context.Background(), &register.UnregisterRaftArgs{
@@ -95,7 +102,7 @@ func main() {
 		}
 	}(int64(cfg.RaftRpc.ID), raftId, uid)
 
-	rafter := raft.NewRaftInstance(cfg, raftConfig)
+	rafter := raft.NewRaftInstance(cfg, raftConfig, redisConfig)
 
 	go rafter.Start(md5)
 

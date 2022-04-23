@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"configStorage/internal/accessor/config"
+	"configStorage/pkg/config"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"time"
@@ -12,15 +12,18 @@ type Client struct {
 	prefix string
 }
 
-func NewRedisClient(cfg *config.Redis) *Client {
+func NewRedisClient(cfg *config.Redis) (*Client, error) {
+	var e error = nil
 	client := &redis.Pool{
 		MaxIdle:     cfg.MaxIdle,
 		MaxActive:   cfg.MaxActive,
 		IdleTimeout: time.Second * cfg.Timeout,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial(cfg.ConType, cfg.Host)
+			addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
+			c, err := redis.Dial(cfg.ConType, addr)
 			if err != nil {
 				fmt.Println(err.Error())
+				e = err
 				return nil, err
 			}
 			/*if _, err := c.Do("AUTH", redisConf["auth"].(string)); err != nil {
@@ -35,7 +38,7 @@ func NewRedisClient(cfg *config.Redis) *Client {
 		Client: client,
 		prefix: cfg.Env,
 	}
-	return &redisClient
+	return &redisClient, e
 }
 
 func (c *Client) ZAddToRedis(key string, score int64, member interface{}) error {
@@ -91,6 +94,35 @@ func (c *Client) DeleteFromRedis(key string) error {
 	defer rc.Close()
 	_, err := rc.Do("DEL", key)
 	return err
+}
+
+func (c *Client) Publish(key string, value interface{}) error {
+	key = c.appendPrefix(key)
+	rc := c.Client.Get()
+	defer rc.Close()
+	_, err := rc.Do("PUBLISH", key, value)
+	return err
+}
+
+func (c *Client) Subscribe(key string, operation func(msg redis.Message)) error {
+	key = c.appendPrefix(key)
+	rc := c.Client.Get()
+	pcs := redis.PubSubConn{Conn: rc}
+	err := pcs.Subscribe(key)
+	if err != nil {
+		return err
+	}
+	for {
+		switch v := pcs.Receive().(type) {
+		case redis.Message:
+			fmt.Printf("message from redis %s: message: %s \n", v.Channel, v.Data)
+			operation(v)
+		case redis.Subscription:
+			fmt.Printf("subscribe from redis: %s: %s %d\n", v.Channel, v.Kind, v.Count)
+		case error:
+			return v
+		}
+	}
 }
 
 func (c *Client) appendPrefix(key string) string {

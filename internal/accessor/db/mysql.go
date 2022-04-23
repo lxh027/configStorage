@@ -1,7 +1,7 @@
 package db
 
 import (
-	"configStorage/internal/accessor/config"
+	"configStorage/pkg/config"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,7 +10,7 @@ import (
 
 func NewMysqlConn(cfg *config.Database) *gorm.DB {
 	// set database dsn
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%s&loc=%s",
 		cfg.Username,
 		cfg.Password,
 		cfg.Host,
@@ -18,6 +18,7 @@ func NewMysqlConn(cfg *config.Database) *gorm.DB {
 		cfg.DbName,
 		cfg.Charset,
 		cfg.ParseTime,
+		"Asia%2FShanghai",
 	)
 
 	gormConfig := gorm.Config{

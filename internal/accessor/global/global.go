@@ -1,10 +1,10 @@
 package global
 
 import (
-	"configStorage/internal/accessor/config"
 	"configStorage/internal/accessor/db"
-	"configStorage/internal/accessor/redis"
 	"configStorage/internal/scheduler"
+	config2 "configStorage/pkg/config"
+	"configStorage/pkg/redis"
 	"gorm.io/gorm"
 	"path"
 )
@@ -19,33 +19,32 @@ var SDBClient scheduler.Client
 
 var Log Logger
 
-var DatabaseCfg config.Database
-var LogCfg config.Log
-var RedisCfg config.Redis
-var ServerCfg config.Server
-var SessionCfg config.Session
+var DatabaseCfg config2.Database
+var LogCfg config2.Log
+var RedisCfg config2.Redis
+var ServerCfg config2.Server
+var SessionCfg config2.Session
 
 func Init(env string) {
 	basePath := path.Join("./config", env)
 
 	databasePath := path.Join(basePath, "database.yml")
-	DatabaseCfg = config.NewDatabaseConfig(databasePath)
+	DatabaseCfg = config2.NewDatabaseConfig(databasePath)
 
 	logPath := path.Join(basePath, "log.yml")
-	LogCfg = config.NewLogConfig(logPath)
+	LogCfg = config2.NewLogConfig(logPath)
 
 	redisPath := path.Join(basePath, "redis.yml")
-	RedisCfg = config.NewRedisConfig(redisPath)
+	RedisCfg = config2.NewRedisConfig(redisPath)
 
 	serverPath := path.Join(basePath, "server.yml")
-	ServerCfg = config.NewServerConfig(serverPath)
+	ServerCfg = config2.NewServerConfig(serverPath)
 
 	sessionPath := path.Join(basePath, "session.yml")
-	SessionCfg = config.NewSessionConfig(sessionPath)
+	SessionCfg = config2.NewSessionConfig(sessionPath)
 
 	MysqlClient = db.NewMysqlConn(&DatabaseCfg)
-	RedisClient = redis.NewRedisClient(&RedisCfg)
-
+	RedisClient, _ = redis.NewRedisClient(&RedisCfg)
 	SDBClient = scheduler.NewSchedulerClient(ServerCfg.SchedulerAddr)
 
 	Log = NewLogger()

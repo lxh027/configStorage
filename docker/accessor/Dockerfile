@@ -16,6 +16,8 @@ RUN go mod tidy \
 
 FROM alpine:latest as prod
 
+RUN apk add tzdata
+
 WORKDIR /root/
 
 COPY --from=0 /app/cmd/accessor/accessor .

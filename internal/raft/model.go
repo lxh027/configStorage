@@ -2,9 +2,12 @@ package raft
 
 import (
 	"configStorage/api/raftrpc"
+	"configStorage/pkg/config"
 	"configStorage/pkg/logger"
+	"configStorage/pkg/redis"
 	"google.golang.org/grpc"
 	"sync"
+	"time"
 )
 
 // Raft object to implement raft state
@@ -16,6 +19,9 @@ type Raft struct {
 	// logger
 	logger *logger.Logger
 
+	// redisClient
+	redisClient *redis.Client
+
 	// persister
 	persister *Persister
 
@@ -24,6 +30,9 @@ type Raft struct {
 
 	// rf config
 	raftCfg RfConfig
+
+	// redisConfig
+	redisCfg config.Redis
 
 	// storage
 	storage Storage
@@ -81,3 +90,22 @@ type Log struct {
 	Index  int32
 	Status bool
 }
+
+type ReportMsg struct {
+	RaftID       string
+	Id           int
+	IsLeader     bool
+	Status       State
+	CfgVersion   string
+	CurrentTerm  int32
+	CurrentIndex int32
+	CommitIndex  int32
+
+	MemoryTotal     uint64
+	MemoryUsed      uint64
+	MemoryAvailable uint64
+	MemoryCur       uint64
+	Now             time.Time
+}
+
+const ReportChan = "RaftReportChan"

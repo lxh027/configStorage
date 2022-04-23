@@ -3,6 +3,7 @@ package accessor
 import (
 	"configStorage/internal/accessor/global"
 	"configStorage/internal/accessor/routes"
+	"configStorage/internal/accessor/task"
 	"configStorage/tools/formatter"
 	"fmt"
 	"github.com/gin-contrib/sessions"
@@ -40,6 +41,9 @@ func Run() {
 
 	// 注册路由
 	routes.BackendRoutes(httpServer)
+
+	go task.DeleteMonitorData()
+	go task.GetMonitorData()
 
 	serverError := httpServer.Run(serverConfig.Host + ":" + serverConfig.Port)
 
