@@ -115,7 +115,7 @@ func (c *Client) Subscribe(key string, operation func(msg redis.Message)) error 
 	for {
 		switch v := pcs.Receive().(type) {
 		case redis.Message:
-			fmt.Printf("message from redis %s: message: %s \n", v.Channel, v.Data)
+			//fmt.Printf("message from redis %s: message: %s \n", v.Channel, v.Data)
 			operation(v)
 		case redis.Subscription:
 			fmt.Printf("subscribe from redis: %s: %s %d\n", v.Channel, v.Kind, v.Count)

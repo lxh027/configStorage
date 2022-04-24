@@ -60,7 +60,7 @@ func GetMonitorData() {
 func DeleteMonitorData() {
 	for {
 		global.MysqlClient.
-			Where("time < ?", time.Now().Add(time.Hour)).Delete(&monitor2.Monitor{})
-		time.Sleep(time.Hour)
+			Where("time < ?", time.Now().Add(-30*time.Minute)).Delete(&monitor2.Monitor{})
+		time.Sleep(time.Minute)
 	}
 }

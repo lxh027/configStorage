@@ -19,3 +19,35 @@ type Monitor struct {
 	MemoryCur       uint64    `json:"memory_cur"`
 	Time            time.Time `json:"time"`
 }
+
+type Peer struct {
+	RaftID   string `json:"raft_id,omitempty"`
+	PeerID   int    `json:"peer_id"`
+	IsLeader bool   `json:"is_leader"`
+}
+
+type Data struct {
+	Basic  BasicData  `json:"basic"`
+	Memory MemoryData `json:"memory"`
+	Raft   []RaftData `json:"raft"`
+}
+
+type BasicData struct {
+	RaftID        string `json:"raft_id"`
+	PeerID        int    `json:"peer_id"`
+	IsLeader      bool   `json:"is_leader"`
+	Status        int    `json:"status"`
+	ConfigVersion string `json:"config_version"`
+}
+
+type MemoryData struct {
+	MemoryTotal     uint64 `json:"memory_total"`
+	MemoryUsed      uint64 `json:"memory_used"`
+	MemoryAvailable uint64 `json:"memory_available"`
+	MemoryCur       uint64 `json:"memory_cur"`
+}
+
+type RaftData struct {
+	Item string    `json:"item"`
+	Data [][]int64 `json:"data"`
+}

@@ -3,6 +3,7 @@ package routes
 import (
 	"configStorage/internal/accessor/app/cluster"
 	"configStorage/internal/accessor/app/log"
+	"configStorage/internal/accessor/app/monitor"
 	"configStorage/internal/accessor/app/namespace"
 	"configStorage/internal/accessor/app/user"
 	"github.com/gin-gonic/gin"
@@ -45,6 +46,12 @@ func BackendRoutes(router *gin.Engine) {
 	cfg := router.Group("config")
 	{
 		cfg.POST("getAllConfigs", log.GetALlConfigs)
+	}
+
+	mnt := router.Group("monitor")
+	{
+		mnt.POST("getRaftPeers", monitor.GetRaftPeers)
+		mnt.POST("getPeerData", monitor.GetRaftPeerMonitorData)
 	}
 
 	router.StaticFS("/admin", http.Dir("./web"))

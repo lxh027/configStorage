@@ -18,6 +18,13 @@ func (dao *Dao) GetUserClusters(userID int) ([]Cluster, error) {
 	return clusters, err
 }
 
+func (dao *Dao) CheckUserCluster(userID int, raftID string) bool {
+	err := global.MysqlClient.
+		Where("user_id = ? AND raft_id = ?", userID, raftID).
+		First(&UserCluster{}).Error
+	return err == nil
+}
+
 func (dao *Dao) AddClusters(clusters []Cluster) error {
 	return global.MysqlClient.
 		Clauses(clause.OnConflict{DoNothing: true}).
