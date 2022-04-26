@@ -160,6 +160,17 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 
 	r.logger.Printf("peer count: %v, target count: %v", cluster.size, r.cfg.Size)
 
+	for i, instance := range cluster.raftCfg {
+		if instance.host == args.Host && instance.clientPort == args.ClientPort {
+			cluster.size--
+			cluster.raftCfg[i].taken = false
+			if cluster.size < r.cfg.Size && cluster.status != Changed {
+				cluster.status = Changed
+				cluster.once = sync.Once{}
+			}
+		}
+	}
+
 	// check if raft cluster is full
 	if cluster.size == r.cfg.Size {
 		return reply, RaftFullErr

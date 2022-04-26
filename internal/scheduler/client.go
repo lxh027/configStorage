@@ -4,6 +4,7 @@ import (
 	"configStorage/api/register"
 	"context"
 	"google.golang.org/grpc"
+	"log"
 )
 
 type Log struct {
@@ -98,5 +99,6 @@ func (s *SCDClient) Commit(namespace string, privateKey string, configs []Log) (
 	}
 
 	reply, err := s.KvStorageClient.Commit(context.Background(), &args)
+	log.Printf("reply,  err: %v, %v", reply, err)
 	return int(reply.LastCommitID), err
 }
