@@ -5,6 +5,8 @@ import (
 	"configStorage/pkg/logger"
 	"configStorage/tools/random"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"google.golang.org/grpc"
 )
@@ -16,8 +18,11 @@ type ClientConfig struct {
 
 type Client interface {
 	Get(string) string
-	Set(string, string)
-	Del(string)
+	Set(string, string) error
+	Del(string) error
+
+	PrefixLoad(string, map[string]string) error
+	PrefixRemove(string) error
 	PrefixConfig(string) map[string]string
 }
 
@@ -51,26 +56,75 @@ func NewRaftClient(cfg ClientConfig) Client {
 	return &c
 }
 
-func (c *rfClient) Set(key string, value string) {
-	command := fmt.Sprintf("set %s %s", key, value)
-	entry := raftrpc.NewEntryArgs{Entry: []byte(command)}
+func (c *rfClient) PrefixLoad(prefix string, data map[string]string) error {
+	loadArgs := LoadPrefixArgs{
+		Prefix: prefix,
+		Data:   data,
+	}
+	bts, err := json.Marshal(loadArgs)
+	if err != nil {
+		c.logger.Printf("parse data error %v", err)
+		return err
+	}
+	entry := raftrpc.NewEntryArgs{Entry: bts, Type: int32(LoadPrefix)}
 
-	reply, _ := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	if err != nil {
+		return err
+	}
 	if reply.Success {
-		c.logger.Printf("set kv ok: %v %v", key, value)
-		return
+		c.logger.Printf("load prefix ok: %v ", prefix)
+		return nil
 	}
 
 	if int(reply.LeaderID) != c.leaderId {
 		c.leaderId = int(reply.LeaderID)
 		c.logger.Printf("leader changed, resent")
-		reply, _ = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		reply, err = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		if err != nil {
+			return err
+		}
 		if reply.Success {
-			c.logger.Printf("set kv ok: %v %v", key, value)
-			return
+			c.logger.Printf("load prefix ok: %v ", prefix)
+			return nil
 		}
 	}
-	c.logger.Printf("set kv error: %v %v, err: %v", key, value, reply.Msg)
+	c.logger.Printf("load prefix ok: %v, err: %v", prefix, reply.Msg)
+	return errors.New(reply.Msg)
+}
+
+func (c *rfClient) PrefixRemove(prefix string) error {
+	entry := raftrpc.NewEntryArgs{Entry: []byte(prefix), Type: int32(RemovePrefix)}
+
+	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	if err != nil {
+		return err
+	}
+	if reply.Success {
+		c.logger.Printf("remove prefix ok: %v ", prefix)
+		return nil
+	}
+
+	if int(reply.LeaderID) != c.leaderId {
+		c.leaderId = int(reply.LeaderID)
+		c.logger.Printf("leader changed, resent")
+		reply, err = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		if err != nil {
+			return err
+		}
+		if reply.Success {
+			c.logger.Printf("remove prefix ok: %v ", prefix)
+			return nil
+		}
+	}
+	c.logger.Printf("remove prefix ok: %v, err: %v", prefix, reply.Msg)
+	return errors.New(reply.Msg)
+}
+
+func (c *rfClient) PrefixConfig(prefix string) map[string]string {
+	index := random.ID(c.size)
+	reply, _ := c.instances[index].GetPrefixConfigs(context.Background(), &raftrpc.GetPrefixConfigArgs{Prefix: prefix})
+	return reply.Config
 }
 
 func (c *rfClient) Get(key string) string {
@@ -80,30 +134,60 @@ func (c *rfClient) Get(key string) string {
 	return reply.Value
 }
 
-func (c *rfClient) PrefixConfig(prefix string) map[string]string {
-	index := random.ID(c.size)
-	reply, _ := c.instances[index].GetPrefixConfigs(context.Background(), &raftrpc.GetPrefixConfigArgs{Prefix: prefix})
-	return reply.Config
-}
+func (c *rfClient) Set(key string, value string) error {
+	command := fmt.Sprintf("set %s %s", key, value)
+	entry := raftrpc.NewEntryArgs{Entry: []byte(command), Type: int32(KV)}
 
-func (c *rfClient) Del(key string) {
-	command := fmt.Sprintf("del %s", key)
-	entry := raftrpc.NewEntryArgs{Entry: []byte(command)}
-
-	reply, _ := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	if err != nil {
+		return err
+	}
 	if reply.Success {
-		c.logger.Printf("del kv ok: %v", key)
-		return
+		c.logger.Printf("set kv ok: %v %v", key, value)
+		return nil
 	}
 
 	if int(reply.LeaderID) != c.leaderId {
 		c.leaderId = int(reply.LeaderID)
 		c.logger.Printf("leader changed, resent")
-		reply, _ = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		reply, err = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		if err != nil {
+			return err
+		}
+		if reply.Success {
+			c.logger.Printf("set kv ok: %v %v", key, value)
+			return nil
+		}
+	}
+	c.logger.Printf("set kv error: %v %v, err: %v", key, value, reply.Msg)
+	return nil
+}
+
+func (c *rfClient) Del(key string) error {
+	command := fmt.Sprintf("del %s", key)
+	entry := raftrpc.NewEntryArgs{Entry: []byte(command), Type: int32(KV)}
+
+	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	if err != nil {
+		return err
+	}
+	if reply.Success {
+		c.logger.Printf("del kv ok: %v", key)
+		return nil
+	}
+
+	if int(reply.LeaderID) != c.leaderId {
+		c.leaderId = int(reply.LeaderID)
+		c.logger.Printf("leader changed, resent")
+		reply, err = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		if err != nil {
+			return err
+		}
 		if reply.Success {
 			c.logger.Printf("del kv ok: %v", key)
-			return
+			return nil
 		}
 	}
 	c.logger.Printf("del kv error: %v, err: %v", key, reply.Msg)
+	return nil
 }

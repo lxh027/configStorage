@@ -321,29 +321,45 @@ func (rf *Raft) checkCommit() {
 		if rf.lastApplied < rf.commitIndex {
 			for i, log := range rf.logs {
 				if log.Index > rf.lastApplied && log.Index <= rf.commitIndex {
-					command := string(log.Entry)
-					words := strings.Split(command, " ")
-					if words[0] == "set" {
-						if len(words) <= 2 {
+					switch log.Type {
+					case KV:
+						command := string(log.Entry)
+						words := strings.Split(command, " ")
+						if words[0] == "set" {
+							if len(words) <= 2 {
+								rf.logger.Printf("entry format error kv")
+								rf.logs[i].Status = false
+							}
+							key := words[1]
+							value := strings.Join(words[2:], " ")
+							rf.storage.Set(key, value)
+						} else if words[0] == "del" {
+							if len(words) != 2 {
+								rf.logger.Printf("entry format error")
+								rf.logs[i].Status = false
+							}
+							key := words[1]
+							if rf.storage.Del(key) != nil {
+								rf.logger.Printf("error del value, %v", command)
+								rf.logs[i].Status = false
+							}
+						} else {
 							rf.logger.Printf("entry format error")
 							rf.logs[i].Status = false
 						}
-						key := words[1]
-						value := strings.Join(words[2:], " ")
-						rf.storage.Set(key, value)
-					} else if words[0] == "del" {
-						if len(words) != 2 {
-							rf.logger.Printf("entry format error")
+					case LoadPrefix:
+						var args LoadPrefixArgs
+						if err := json.Unmarshal(log.Entry, &args); err != nil {
 							rf.logs[i].Status = false
+							rf.logger.Printf("parse load prefix args error: %v", err.Error())
+						} else {
+							rf.storage.LoadPrefix(args.Prefix, args.Data)
+							rf.logger.Printf("load prefix success: %v", args.Prefix)
 						}
-						key := words[1]
-						if rf.storage.Del(key) != nil {
-							rf.logger.Printf("error del value, %v", command)
-							rf.logs[i].Status = false
-						}
-					} else {
-						rf.logger.Printf("entry format error")
-						rf.logs[i].Status = false
+					case RemovePrefix:
+						prefix := string(log.Entry)
+						rf.storage.RemovePrefix(prefix)
+						rf.logger.Printf("remove prefix success: %v", prefix)
 					}
 					rf.lastApplied = log.Index
 				}

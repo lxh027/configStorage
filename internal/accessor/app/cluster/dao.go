@@ -27,7 +27,7 @@ func (dao *Dao) CheckUserCluster(userID int, raftID string) bool {
 
 func (dao *Dao) AddClusters(clusters []Cluster) error {
 	return global.MysqlClient.
-		Clauses(clause.OnConflict{DoNothing: true}).
+		Clauses(clause.OnConflict{UpdateAll: true}).
 		CreateInBatches(clusters, len(clusters)).
 		Error
 }

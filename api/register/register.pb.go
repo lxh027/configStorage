@@ -993,6 +993,200 @@ func (x *GetConfigsByNamespaceReply) GetConfigs() map[string]string {
 	return nil
 }
 
+type DeleteNamespaceArgs struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Namespace  string `protobuf:"bytes,1,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	PrivateKey string `protobuf:"bytes,2,opt,name=PrivateKey,proto3" json:"PrivateKey,omitempty"`
+}
+
+func (x *DeleteNamespaceArgs) Reset() {
+	*x = DeleteNamespaceArgs{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_register_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteNamespaceArgs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteNamespaceArgs) ProtoMessage() {}
+
+func (x *DeleteNamespaceArgs) ProtoReflect() protoreflect.Message {
+	mi := &file_register_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteNamespaceArgs.ProtoReflect.Descriptor instead.
+func (*DeleteNamespaceArgs) Descriptor() ([]byte, []int) {
+	return file_register_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *DeleteNamespaceArgs) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *DeleteNamespaceArgs) GetPrivateKey() string {
+	if x != nil {
+		return x.PrivateKey
+	}
+	return ""
+}
+
+type DeleteNamespaceReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DeleteNamespaceReply) Reset() {
+	*x = DeleteNamespaceReply{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_register_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteNamespaceReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteNamespaceReply) ProtoMessage() {}
+
+func (x *DeleteNamespaceReply) ProtoReflect() protoreflect.Message {
+	mi := &file_register_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteNamespaceReply.ProtoReflect.Descriptor instead.
+func (*DeleteNamespaceReply) Descriptor() ([]byte, []int) {
+	return file_register_proto_rawDescGZIP(), []int{18}
+}
+
+type TransNamespaceArgs struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Namespace  string `protobuf:"bytes,1,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	RaftID     string `protobuf:"bytes,2,opt,name=RaftID,proto3" json:"RaftID,omitempty"`
+	PrivateKey string `protobuf:"bytes,3,opt,name=PrivateKey,proto3" json:"PrivateKey,omitempty"`
+}
+
+func (x *TransNamespaceArgs) Reset() {
+	*x = TransNamespaceArgs{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_register_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransNamespaceArgs) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransNamespaceArgs) ProtoMessage() {}
+
+func (x *TransNamespaceArgs) ProtoReflect() protoreflect.Message {
+	mi := &file_register_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransNamespaceArgs.ProtoReflect.Descriptor instead.
+func (*TransNamespaceArgs) Descriptor() ([]byte, []int) {
+	return file_register_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *TransNamespaceArgs) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *TransNamespaceArgs) GetRaftID() string {
+	if x != nil {
+		return x.RaftID
+	}
+	return ""
+}
+
+func (x *TransNamespaceArgs) GetPrivateKey() string {
+	if x != nil {
+		return x.PrivateKey
+	}
+	return ""
+}
+
+type TransNamespaceReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *TransNamespaceReply) Reset() {
+	*x = TransNamespaceReply{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_register_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TransNamespaceReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TransNamespaceReply) ProtoMessage() {}
+
+func (x *TransNamespaceReply) ProtoReflect() protoreflect.Message {
+	mi := &file_register_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TransNamespaceReply.ProtoReflect.Descriptor instead.
+func (*TransNamespaceReply) Descriptor() ([]byte, []int) {
+	return file_register_proto_rawDescGZIP(), []int{20}
+}
+
 type GetClusterReply_Cluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1005,7 +1199,7 @@ type GetClusterReply_Cluster struct {
 func (x *GetClusterReply_Cluster) Reset() {
 	*x = GetClusterReply_Cluster{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_register_proto_msgTypes[17]
+		mi := &file_register_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1018,7 +1212,7 @@ func (x *GetClusterReply_Cluster) String() string {
 func (*GetClusterReply_Cluster) ProtoMessage() {}
 
 func (x *GetClusterReply_Cluster) ProtoReflect() protoreflect.Message {
-	mi := &file_register_proto_msgTypes[17]
+	mi := &file_register_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1142,7 +1336,22 @@ var file_register_proto_rawDesc = []byte{
 	0x3a, 0x0a, 0x0c, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12,
 	0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65,
 	0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0xd1, 0x01, 0x0a, 0x0c,
+	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x53, 0x0a, 0x13, 0x44,
+	0x65, 0x6c, 0x65, 0x74, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x41, 0x72,
+	0x67, 0x73, 0x12, 0x1c, 0x0a, 0x09, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65,
+	0x12, 0x1e, 0x0a, 0x0a, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x4b, 0x65, 0x79, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x4b, 0x65, 0x79,
+	0x22, 0x16, 0x0a, 0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70,
+	0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x22, 0x6a, 0x0a, 0x12, 0x54, 0x72, 0x61, 0x6e,
+	0x73, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x41, 0x72, 0x67, 0x73, 0x12, 0x1c,
+	0x0a, 0x09, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x09, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x16, 0x0a, 0x06,
+	0x52, 0x61, 0x66, 0x74, 0x49, 0x44, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x52, 0x61,
+	0x66, 0x74, 0x49, 0x44, 0x12, 0x1e, 0x0a, 0x0a, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x4b,
+	0x65, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74,
+	0x65, 0x4b, 0x65, 0x79, 0x22, 0x15, 0x0a, 0x13, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x4e, 0x61, 0x6d,
+	0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x32, 0xd1, 0x01, 0x0a, 0x0c,
 	0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x61, 0x66, 0x74, 0x12, 0x35, 0x0a, 0x0c,
 	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x61, 0x66, 0x74, 0x12, 0x11, 0x2e, 0x52,
 	0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x61, 0x66, 0x74, 0x41, 0x72, 0x67, 0x73, 0x1a,
@@ -1156,7 +1365,7 @@ var file_register_proto_rawDesc = []byte{
 	0x52, 0x61, 0x66, 0x74, 0x12, 0x13, 0x2e, 0x55, 0x6e, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65,
 	0x72, 0x52, 0x61, 0x66, 0x74, 0x41, 0x72, 0x67, 0x73, 0x1a, 0x14, 0x2e, 0x55, 0x6e, 0x72, 0x65,
 	0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x61, 0x66, 0x74, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x32,
-	0x99, 0x02, 0x0a, 0x09, 0x6b, 0x76, 0x53, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x12, 0x30, 0x0a,
+	0x96, 0x03, 0x0a, 0x09, 0x6b, 0x76, 0x53, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x12, 0x30, 0x0a,
 	0x0b, 0x47, 0x65, 0x74, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x12, 0x0f, 0x2e, 0x47,
 	0x65, 0x74, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x41, 0x72, 0x67, 0x73, 0x1a, 0x10, 0x2e,
 	0x47, 0x65, 0x74, 0x43, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x12,
@@ -1173,10 +1382,18 @@ var file_register_proto_rawDesc = []byte{
 	0x63, 0x65, 0x12, 0x1a, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x42,
 	0x79, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x41, 0x72, 0x67, 0x73, 0x1a, 0x1b,
 	0x2e, 0x47, 0x65, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x42, 0x79, 0x4e, 0x61, 0x6d,
-	0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x42, 0x23, 0x5a, 0x21, 0x6c,
-	0x78, 0x68, 0x30, 0x32, 0x37, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x53, 0x74, 0x6f, 0x72,
-	0x61, 0x67, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x12, 0x3e, 0x0a, 0x0f, 0x44,
+	0x65, 0x6c, 0x65, 0x74, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x14,
+	0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65,
+	0x41, 0x72, 0x67, 0x73, 0x1a, 0x15, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x4e, 0x61, 0x6d,
+	0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x12, 0x3b, 0x0a, 0x0e, 0x54,
+	0x72, 0x61, 0x6e, 0x73, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x12, 0x13, 0x2e,
+	0x54, 0x72, 0x61, 0x6e, 0x73, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65, 0x41, 0x72,
+	0x67, 0x73, 0x1a, 0x14, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70,
+	0x61, 0x63, 0x65, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x42, 0x23, 0x5a, 0x21, 0x6c, 0x78, 0x68, 0x30,
+	0x32, 0x37, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x53, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1191,7 +1408,7 @@ func file_register_proto_rawDescGZIP() []byte {
 	return file_register_proto_rawDescData
 }
 
-var file_register_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_register_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_register_proto_goTypes = []interface{}{
 	(*RegisterRaftArgs)(nil),           // 0: RegisterRaftArgs
 	(*RegisterRaftReply)(nil),          // 1: RegisterRaftReply
@@ -1210,13 +1427,17 @@ var file_register_proto_goTypes = []interface{}{
 	(*GetConfigReply)(nil),             // 14: GetConfigReply
 	(*GetConfigsByNamespaceArgs)(nil),  // 15: GetConfigsByNamespaceArgs
 	(*GetConfigsByNamespaceReply)(nil), // 16: GetConfigsByNamespaceReply
-	(*GetClusterReply_Cluster)(nil),    // 17: GetClusterReply.Cluster
-	nil,                                // 18: GetConfigsByNamespaceReply.ConfigsEntry
+	(*DeleteNamespaceArgs)(nil),        // 17: DeleteNamespaceArgs
+	(*DeleteNamespaceReply)(nil),       // 18: DeleteNamespaceReply
+	(*TransNamespaceArgs)(nil),         // 19: TransNamespaceArgs
+	(*TransNamespaceReply)(nil),        // 20: TransNamespaceReply
+	(*GetClusterReply_Cluster)(nil),    // 21: GetClusterReply.Cluster
+	nil,                                // 22: GetConfigsByNamespaceReply.ConfigsEntry
 }
 var file_register_proto_depIdxs = []int32{
-	17, // 0: GetClusterReply.Clusters:type_name -> GetClusterReply.Cluster
+	21, // 0: GetClusterReply.Clusters:type_name -> GetClusterReply.Cluster
 	12, // 1: CommitArgs.Ops:type_name -> ConfigOp
-	18, // 2: GetConfigsByNamespaceReply.Configs:type_name -> GetConfigsByNamespaceReply.ConfigsEntry
+	22, // 2: GetConfigsByNamespaceReply.Configs:type_name -> GetConfigsByNamespaceReply.ConfigsEntry
 	0,  // 3: registerRaft.RegisterRaft:input_type -> RegisterRaftArgs
 	2,  // 4: registerRaft.GetRaftRegistrations:input_type -> GetRaftRegistrationsArgs
 	4,  // 5: registerRaft.UnregisterRaft:input_type -> UnregisterRaftArgs
@@ -1225,16 +1446,20 @@ var file_register_proto_depIdxs = []int32{
 	10, // 8: kvStorage.Commit:input_type -> CommitArgs
 	13, // 9: kvStorage.GetConfig:input_type -> GetConfigArgs
 	15, // 10: kvStorage.GetConfigsByNamespace:input_type -> GetConfigsByNamespaceArgs
-	1,  // 11: registerRaft.RegisterRaft:output_type -> RegisterRaftReply
-	3,  // 12: registerRaft.GetRaftRegistrations:output_type -> GetRaftRegistrationsReply
-	5,  // 13: registerRaft.UnregisterRaft:output_type -> UnregisterRaftReply
-	9,  // 14: kvStorage.GetClusters:output_type -> GetClusterReply
-	7,  // 15: kvStorage.NewNamespace:output_type -> NewNamespaceReply
-	11, // 16: kvStorage.Commit:output_type -> CommitReply
-	14, // 17: kvStorage.GetConfig:output_type -> GetConfigReply
-	16, // 18: kvStorage.GetConfigsByNamespace:output_type -> GetConfigsByNamespaceReply
-	11, // [11:19] is the sub-list for method output_type
-	3,  // [3:11] is the sub-list for method input_type
+	17, // 11: kvStorage.DeleteNamespace:input_type -> DeleteNamespaceArgs
+	19, // 12: kvStorage.TransNamespace:input_type -> TransNamespaceArgs
+	1,  // 13: registerRaft.RegisterRaft:output_type -> RegisterRaftReply
+	3,  // 14: registerRaft.GetRaftRegistrations:output_type -> GetRaftRegistrationsReply
+	5,  // 15: registerRaft.UnregisterRaft:output_type -> UnregisterRaftReply
+	9,  // 16: kvStorage.GetClusters:output_type -> GetClusterReply
+	7,  // 17: kvStorage.NewNamespace:output_type -> NewNamespaceReply
+	11, // 18: kvStorage.Commit:output_type -> CommitReply
+	14, // 19: kvStorage.GetConfig:output_type -> GetConfigReply
+	16, // 20: kvStorage.GetConfigsByNamespace:output_type -> GetConfigsByNamespaceReply
+	18, // 21: kvStorage.DeleteNamespace:output_type -> DeleteNamespaceReply
+	20, // 22: kvStorage.TransNamespace:output_type -> TransNamespaceReply
+	13, // [13:23] is the sub-list for method output_type
+	3,  // [3:13] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -1451,6 +1676,54 @@ func file_register_proto_init() {
 			}
 		}
 		file_register_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteNamespaceArgs); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_register_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteNamespaceReply); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_register_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TransNamespaceArgs); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_register_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TransNamespaceReply); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_register_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetClusterReply_Cluster); i {
 			case 0:
 				return &v.state
@@ -1469,7 +1742,7 @@ func file_register_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_register_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

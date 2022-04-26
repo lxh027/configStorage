@@ -98,6 +98,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 						Term:   l.Term,
 						Index:  l.Index,
 						Status: l.Status,
+						Type:   LogType(l.Type),
 					})
 				}
 				break
@@ -110,6 +111,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 			Term:   log.Term,
 			Index:  log.Index,
 			Status: log.Status,
+			Type:   LogType(log.Type),
 		})
 		rf.currentIndex++
 	}
@@ -154,6 +156,7 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 	log := Log{
 		Entry:  args.Entry,
 		Term:   rf.currentTerm,
+		Type:   LogType(args.Type),
 		Index:  logIndex,
 		Status: true,
 	}

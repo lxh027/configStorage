@@ -20,6 +20,11 @@ type UserNamespace struct {
 	Type        int `json:"type"`
 }
 
+type Op struct {
+	NamespaceID int    `json:"namespace_id"`
+	RaftID      string `json:"raft_id"`
+}
+
 type Query struct {
 	Name      string `json:"name"`
 	PageIndex int    `json:"pageIndex"`

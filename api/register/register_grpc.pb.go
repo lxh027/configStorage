@@ -187,6 +187,8 @@ type KvStorageClient interface {
 	Commit(ctx context.Context, in *CommitArgs, opts ...grpc.CallOption) (*CommitReply, error)
 	GetConfig(ctx context.Context, in *GetConfigArgs, opts ...grpc.CallOption) (*GetConfigReply, error)
 	GetConfigsByNamespace(ctx context.Context, in *GetConfigsByNamespaceArgs, opts ...grpc.CallOption) (*GetConfigsByNamespaceReply, error)
+	DeleteNamespace(ctx context.Context, in *DeleteNamespaceArgs, opts ...grpc.CallOption) (*DeleteNamespaceReply, error)
+	TransNamespace(ctx context.Context, in *TransNamespaceArgs, opts ...grpc.CallOption) (*TransNamespaceReply, error)
 }
 
 type kvStorageClient struct {
@@ -242,6 +244,24 @@ func (c *kvStorageClient) GetConfigsByNamespace(ctx context.Context, in *GetConf
 	return out, nil
 }
 
+func (c *kvStorageClient) DeleteNamespace(ctx context.Context, in *DeleteNamespaceArgs, opts ...grpc.CallOption) (*DeleteNamespaceReply, error) {
+	out := new(DeleteNamespaceReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/DeleteNamespace", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kvStorageClient) TransNamespace(ctx context.Context, in *TransNamespaceArgs, opts ...grpc.CallOption) (*TransNamespaceReply, error) {
+	out := new(TransNamespaceReply)
+	err := c.cc.Invoke(ctx, "/kvStorage/TransNamespace", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KvStorageServer is the server API for KvStorage service.
 // All implementations must embed UnimplementedKvStorageServer
 // for forward compatibility
@@ -251,6 +271,8 @@ type KvStorageServer interface {
 	Commit(context.Context, *CommitArgs) (*CommitReply, error)
 	GetConfig(context.Context, *GetConfigArgs) (*GetConfigReply, error)
 	GetConfigsByNamespace(context.Context, *GetConfigsByNamespaceArgs) (*GetConfigsByNamespaceReply, error)
+	DeleteNamespace(context.Context, *DeleteNamespaceArgs) (*DeleteNamespaceReply, error)
+	TransNamespace(context.Context, *TransNamespaceArgs) (*TransNamespaceReply, error)
 	mustEmbedUnimplementedKvStorageServer()
 }
 
@@ -272,6 +294,12 @@ func (UnimplementedKvStorageServer) GetConfig(context.Context, *GetConfigArgs) (
 }
 func (UnimplementedKvStorageServer) GetConfigsByNamespace(context.Context, *GetConfigsByNamespaceArgs) (*GetConfigsByNamespaceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetConfigsByNamespace not implemented")
+}
+func (UnimplementedKvStorageServer) DeleteNamespace(context.Context, *DeleteNamespaceArgs) (*DeleteNamespaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteNamespace not implemented")
+}
+func (UnimplementedKvStorageServer) TransNamespace(context.Context, *TransNamespaceArgs) (*TransNamespaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TransNamespace not implemented")
 }
 func (UnimplementedKvStorageServer) mustEmbedUnimplementedKvStorageServer() {}
 
@@ -376,6 +404,42 @@ func _KvStorage_GetConfigsByNamespace_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KvStorage_DeleteNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteNamespaceArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).DeleteNamespace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/DeleteNamespace",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).DeleteNamespace(ctx, req.(*DeleteNamespaceArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KvStorage_TransNamespace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TransNamespaceArgs)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KvStorageServer).TransNamespace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kvStorage/TransNamespace",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KvStorageServer).TransNamespace(ctx, req.(*TransNamespaceArgs))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KvStorage_ServiceDesc is the grpc.ServiceDesc for KvStorage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -402,6 +466,14 @@ var KvStorage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConfigsByNamespace",
 			Handler:    _KvStorage_GetConfigsByNamespace_Handler,
+		},
+		{
+			MethodName: "DeleteNamespace",
+			Handler:    _KvStorage_DeleteNamespace_Handler,
+		},
+		{
+			MethodName: "TransNamespace",
+			Handler:    _KvStorage_TransNamespace_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

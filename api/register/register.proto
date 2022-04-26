@@ -23,6 +23,11 @@ service kvStorage {
   rpc GetConfig(GetConfigArgs) returns (GetConfigReply);
 
   rpc GetConfigsByNamespace(GetConfigsByNamespaceArgs) returns (GetConfigsByNamespaceReply);
+
+  rpc DeleteNamespace(DeleteNamespaceArgs) returns (DeleteNamespaceReply);
+
+  rpc TransNamespace(TransNamespaceArgs) returns (TransNamespaceReply);
+
 }
 
 
@@ -119,3 +124,18 @@ message GetConfigsByNamespaceReply {
   bool OK = 1;
   map<string, string> Configs = 2;
 }
+
+message DeleteNamespaceArgs {
+  string Namespace = 1;
+  string PrivateKey = 2;
+}
+
+message DeleteNamespaceReply {}
+
+message TransNamespaceArgs {
+  string Namespace = 1;
+  string RaftID = 2;
+  string PrivateKey = 3;
+}
+
+message TransNamespaceReply {}

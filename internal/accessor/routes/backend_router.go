@@ -33,6 +33,8 @@ func BackendRoutes(router *gin.Engine) {
 		name.POST("getUserNamespaces", namespace.GetUserNamespaces)
 		name.POST("newNamespace", namespace.NewNamespace)
 		name.POST("setAuth", namespace.SetAuth)
+		name.POST("deleteNamespace", namespace.DeleteNamespace)
+		name.POST("updateRaftID", namespace.UpdateNamespaceRaftID)
 	}
 
 	lg := router.Group("log")

@@ -391,6 +391,7 @@ func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *regist
 	}
 
 	reply.Configs = r.clusters[namespace.raftId].client.PrefixConfig(args.Namespace)
+	r.logger.Printf("config: %v", reply.Configs)
 	reply.OK = true
 	return reply, nil
 }
@@ -404,9 +405,6 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 	if len(args.Ops) == 0 {
 		return reply, nil
 	}
-	if r.namespace[args.Namespace].status {
-		return reply, NamespaceCommittingErr
-	}
 
 	if namespace, ok := r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
@@ -416,13 +414,13 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 
 	for _, op := range args.Ops {
 		if op.Type == 0 {
-			if r.setConfig(args.Namespace, op) != nil {
+			if err := r.setConfig(args.Namespace, op); err != nil {
 				reply.LastCommitID = op.Id
-				return reply, nil
+				return reply, err
 			}
-		} else if r.delConfig(args.Namespace, op) != nil {
+		} else if err := r.delConfig(args.Namespace, op); err != nil {
 			reply.LastCommitID = op.Id
-			return reply, nil
+			return reply, err
 		}
 	}
 	reply.OK = true
@@ -430,18 +428,63 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 	return reply, nil
 }
 
+func (r *RegisterCenter) DeleteNamespace(ctx context.Context, args *register.DeleteNamespaceArgs) (reply *register.DeleteNamespaceReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply = &register.DeleteNamespaceReply{}
+	if namespace, ok := r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	err = r.clusters[r.namespace[args.Namespace].raftId].client.PrefixRemove(args.Namespace)
+	if err != nil {
+		return reply, err
+	}
+	delete(r.namespace, args.Namespace)
+	return reply, nil
+}
+
+func (r *RegisterCenter) TransNamespace(ctx context.Context, args *register.TransNamespaceArgs) (reply *register.TransNamespaceReply, err error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	reply = &register.TransNamespaceReply{}
+
+	var namespace namespace
+	var ok bool
+	if namespace, ok = r.namespace[args.Namespace]; !ok {
+		return reply, NamespaceNotExistedErr
+	} else if namespace.privateKey != args.PrivateKey {
+		return reply, PrivateKeyUnPatchErr
+	}
+
+	if _, ok := r.clusters[args.RaftID]; !ok {
+		return reply, ClusterNotExistedErr
+	}
+
+	configs := r.clusters[namespace.raftId].client.PrefixConfig(args.Namespace)
+	err = r.clusters[args.RaftID].client.PrefixLoad(args.Namespace, configs)
+	if err != nil {
+		return reply, err
+	}
+	err = r.clusters[r.namespace[args.Namespace].raftId].client.PrefixRemove(args.Namespace)
+	if err != nil {
+		return reply, err
+	}
+	namespace.raftId = args.RaftID
+	r.namespace[args.Namespace] = namespace
+	return reply, nil
+}
+
 func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
 	raftID := r.namespace[name].raftId
-	r.clusters[raftID].client.Set(name+"."+args.Key, args.Value)
-
-	return nil
+	return r.clusters[raftID].client.Set(name+"."+args.Key, args.Value)
 }
 
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
 	raftID := r.namespace[name].raftId
-	r.clusters[raftID].client.Del(name + "." + args.Key)
-
-	return nil
+	return r.clusters[raftID].client.Del(name + "." + args.Key)
 }
 
 func (r *RegisterCenter) getConn(raftId string) {

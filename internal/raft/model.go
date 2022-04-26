@@ -90,9 +90,15 @@ type Raft struct {
 // Status if the log is no longer useful
 type Log struct {
 	Entry  []byte
+	Type   LogType
 	Term   int32
 	Index  int32
 	Status bool
+}
+
+type LoadPrefixArgs struct {
+	Prefix string
+	Data   map[string]string
 }
 
 type ReportMsg struct {

@@ -3,6 +3,7 @@ package namespace
 import (
 	"configStorage/internal/accessor/app/user"
 	"configStorage/internal/accessor/global"
+	"configStorage/internal/scheduler"
 	"configStorage/tools/random"
 	"errors"
 )
@@ -20,11 +21,33 @@ func (s *Service) NewNamespace(userId int, name string, raftID string) error {
 	return s.namespaceDao.NewNamespace(userId, name, raftID, privateKey)
 }
 
-// UpdateNamespace TODO updateNamespace
-func (s *Service) UpdateNamespace() {}
+func (s *Service) UpdateNamespaceRaftID(userID, namespaceID int, raftID string) error {
+	if s.namespaceDao.CheckPriv(userID, namespaceID) != Owner {
+		return errors.New("not namespace's owner")
+	}
+	namespace := s.namespaceDao.GetNamespace(namespaceID)
+	if namespace == nil {
+		return errors.New("namespace not found")
+	}
+	if err := global.SDBClient.TransNamespace(namespace.Name, namespace.PrivateKey, raftID); err != nil {
+		return err
+	}
+	return s.namespaceDao.UpdateRaftID(namespaceID, raftID)
+}
 
-// DeleteNamespace TODO deleteNamespace
-func (s *Service) DeleteNamespace() {}
+func (s *Service) DeleteNamespace(userId, namespaceId int) error {
+	if s.namespaceDao.CheckPriv(userId, namespaceId) != Owner {
+		return errors.New("not namespace's owner")
+	}
+	namespace := s.namespaceDao.GetNamespace(namespaceId)
+	if namespace == nil {
+		return errors.New("namespace not found")
+	}
+	if err := global.SDBClient.DeleteNamespace(namespace.Name, namespace.PrivateKey); err != nil && err != scheduler.NamespaceNotExistedErr {
+		return err
+	}
+	return s.namespaceDao.DeleteNamespace(namespaceId)
+}
 
 func (s *Service) AuthUserPrivileges(me int, username string, namespaceID int, tp int) error {
 	if s.namespaceDao.CheckPriv(me, namespaceID) != Owner {

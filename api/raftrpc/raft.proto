@@ -34,8 +34,9 @@ message RequestVoteReply {
 message Log {
   int32 Term   = 1;
   int32 Index  = 2;
-  bytes Entry   = 3;
-  bool Status   = 4;
+  int32 Type  = 3;
+  bytes Entry   = 4;
+  bool Status   = 5;
 }
 
 message AppendEntriesArgs {
@@ -54,6 +55,7 @@ message AppendEntriesReply {
 
 message NewEntryArgs {
   bytes Entry = 1;
+  int32 Type = 2;
 }
 
 message NewEntryReply {

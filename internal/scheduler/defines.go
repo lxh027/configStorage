@@ -19,6 +19,8 @@ var PrivateKeyUnPatchErr KvError = errors.New("private key not patch")
 
 var NamespaceCommittingErr KvError = errors.New("namespace is committing")
 
+var ClusterNotExistedErr RegisterError = errors.New("cluster not existed")
+
 type clusterStatus int
 
 const (

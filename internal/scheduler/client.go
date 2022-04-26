@@ -25,6 +25,8 @@ type Client interface {
 	GetConfig(namespace string, privateKey string, key string) (string, error)
 	GetConfigByNamespace(namespace string, privateKey string) (map[string]string, error)
 	Commit(namespace string, privateKey string, configs []Log) (int, error)
+	DeleteNamespace(name string, privateKey string) error
+	TransNamespace(name string, privateKey string, raftID string) error
 }
 
 type SCDClient struct {
@@ -101,4 +103,23 @@ func (s *SCDClient) Commit(namespace string, privateKey string, configs []Log) (
 	reply, err := s.KvStorageClient.Commit(context.Background(), &args)
 	log.Printf("reply,  err: %v, %v", reply, err)
 	return int(reply.LastCommitID), err
+}
+
+func (s *SCDClient) DeleteNamespace(name string, privateKey string) error {
+	args := register.DeleteNamespaceArgs{
+		Namespace:  name,
+		PrivateKey: privateKey,
+	}
+	_, err := s.KvStorageClient.DeleteNamespace(context.Background(), &args)
+	return err
+}
+
+func (s *SCDClient) TransNamespace(name string, privateKey string, raftID string) error {
+	args := register.TransNamespaceArgs{
+		Namespace:  name,
+		PrivateKey: privateKey,
+		RaftID:     raftID,
+	}
+	_, err := s.KvStorageClient.TransNamespace(context.Background(), &args)
+	return err
 }

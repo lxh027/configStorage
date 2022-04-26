@@ -59,3 +59,23 @@ func (dao *Dao) GetNamespace(namespaceID int) *Namespace {
 	}
 	return &np
 }
+
+func (dao *Dao) GetNamespaceWithAuth(namespaceID int, userID int) (WithAuth, error) {
+	var namespace WithAuth
+	err := global.MysqlClient.Model(Namespace{}).
+		Select("namespace.id, namespace.name, namespace.raft_id, namespace.user_id, namespace.private_key, user_namespace.type, user.username").
+		Joins("join user_namespace on namespace.id = user_namespace.namespace_id").
+		Joins("join user on user.id = user_namespace.user_id").
+		Where("user_namespace.user_id = ? AND namespace.id = ?", userID, namespaceID).
+		First(&namespace).
+		Error
+	return namespace, err
+}
+
+func (dao *Dao) UpdateRaftID(namespaceID int, raftID string) error {
+	return global.MysqlClient.Model(&Namespace{}).Where("id = ?", namespaceID).Update("raft_id", raftID).Error
+}
+
+func (dao *Dao) DeleteNamespace(namespaceID int) error {
+	return global.MysqlClient.Where("id = ?", namespaceID).Delete(&Namespace{}).Error
+}

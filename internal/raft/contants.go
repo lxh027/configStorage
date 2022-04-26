@@ -13,6 +13,14 @@ const (
 	Fail    = false
 )
 
+type LogType uint8
+
+const (
+	KV LogType = iota
+	LoadPrefix
+	RemovePrefix
+)
+
 type State uint8
 
 const (

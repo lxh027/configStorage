@@ -267,6 +267,7 @@ func (rf *Raft) loopLeader() bool {
 						Index:  l.Index,
 						Entry:  l.Entry,
 						Status: l.Status,
+						Type:   int32(l.Type),
 					})
 				}
 			}
