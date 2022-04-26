@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"google.golang.org/grpc"
 	"net"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -42,7 +43,7 @@ func NewRaftInstance(rpcConfig Config, rfConfig RfConfig, redisConfig config.Red
 		redisCfg:     redisConfig,
 		cfg:          rpcConfig,
 		raftCfg:      rfConfig,
-		storage:      NewRaftStorage(),
+		storage:      NewNamespaceStorage(),
 		leaderState: struct {
 			nextIndex  map[int32]int32
 			matchIndex map[int32]int32
@@ -408,14 +409,14 @@ func (rf *Raft) readPersist() {
 	rf.logs = logs
 
 	// read snapshot
-	var sp map[string]string
+	var sp interface{} = reflect.New(rf.storage.StorageType())
 	snapshotData := rf.persister.ReadSnapshot()
 	r = bytes.NewBuffer(snapshotData)
 	d = labgob.NewDecoder(r)
 	if d.Decode(&sp) != nil {
 		fmt.Println("Decode Error")
 	}
-	rf.storage.Load(&sp)
+	rf.storage.Load(sp)
 }
 
 func (rf *Raft) getStatus() ReportMsg {
