@@ -73,6 +73,10 @@ type Raft struct {
 	stateChange chan State
 
 	logs []Log
+
+	msgCommitTime []time.Duration
+	reVoteTime    []time.Duration
+
 	// leaderState when the instance become leader, to record followers' state to maintain leadership
 	leaderState struct {
 		nextIndex  map[int32]int32
@@ -100,6 +104,9 @@ type ReportMsg struct {
 	CurrentTerm  int32
 	CurrentIndex int32
 	CommitIndex  int32
+
+	ReVoteTime int64
+	CommitTime int64
 
 	MemoryTotal     uint64
 	MemoryUsed      uint64

@@ -207,6 +207,8 @@ func (rf *Raft) startRaft() {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithCancel(context.Background())
+	var now = time.Now()
+	var lastState = Follower
 	for {
 		state = <-rf.stateChange
 		rf.persist()
@@ -216,10 +218,31 @@ func (rf *Raft) startRaft() {
 		ctx, cancel = context.WithCancel(context.Background())
 		switch state {
 		case Follower:
+			// calculate re vote duration
+			if lastState != Follower && lastState != Leader {
+				d := time.Now().Sub(now)
+				if len(rf.reVoteTime) == 100 {
+					rf.reVoteTime = rf.reVoteTime[1:]
+				}
+				rf.reVoteTime = append(rf.reVoteTime, d)
+			}
+			lastState = Follower
+			now = time.Now()
 			go rf.follower(ctx)
 		case Candidate:
+			lastState = Candidate
+			now = time.Now()
 			go rf.candidate(ctx)
 		case Leader:
+			if lastState != Follower && lastState != Leader {
+				d := time.Now().Sub(now)
+				if len(rf.reVoteTime) == 100 {
+					rf.reVoteTime = rf.reVoteTime[1:]
+				}
+				rf.reVoteTime = append(rf.reVoteTime, d)
+			}
+			lastState = Leader
+			now = time.Now()
 			go rf.leader(ctx)
 		case Shutdown:
 			cancel()
@@ -399,6 +422,23 @@ func (rf *Raft) getStatus() ReportMsg {
 	machineMem, _ := mem.VirtualMemory()
 	var curMem runtime.MemStats
 	runtime.ReadMemStats(&curMem)
+
+	var revoteTime, commitTime int64 = 0, 0
+	if len(rf.reVoteTime) != 0 {
+		var reVoteTimeSum time.Duration = 0
+		for _, d := range rf.reVoteTime {
+			reVoteTimeSum += d
+		}
+		revoteTime = reVoteTimeSum.Milliseconds() / int64(len(rf.reVoteTime))
+	}
+	if len(rf.msgCommitTime) != 0 {
+		var msgCommitTimeSum time.Duration = 0
+		for _, d := range rf.msgCommitTime {
+			msgCommitTimeSum += d
+		}
+		commitTime = msgCommitTimeSum.Milliseconds() / int64(len(rf.msgCommitTime))
+	}
+	//rf.logger.Printf("%v\n%v\n", rf.msgCommitTime, rf.reVoteTime)
 	rm := ReportMsg{
 		RaftID:          rf.raftCfg.RaftID,
 		Id:              int(rf.id),
@@ -408,6 +448,8 @@ func (rf *Raft) getStatus() ReportMsg {
 		CurrentTerm:     rf.currentTerm,
 		CurrentIndex:    rf.currentIndex,
 		CommitIndex:     rf.commitIndex,
+		ReVoteTime:      revoteTime,
+		CommitTime:      commitTime,
 		MemoryTotal:     machineMem.Total,
 		MemoryUsed:      machineMem.Used,
 		MemoryAvailable: machineMem.Available,

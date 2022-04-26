@@ -43,6 +43,10 @@ func (s *Service) GetPeerMonitorData(userID int, raftID string, peerID int) (*Da
 			MemoryUsed:      monitors[0].MemoryUsed,
 			MemoryAvailable: monitors[0].MemoryAvailable,
 		},
+		Time: TimeData{
+			RevoteTime: monitors[0].RevoteTime,
+			CommitTime: monitors[0].CommitTime,
+		},
 		Raft: make([]RaftData, 0),
 	}
 

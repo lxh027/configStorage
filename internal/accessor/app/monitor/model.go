@@ -13,6 +13,9 @@ type Monitor struct {
 	CurrentIndex  int32  `json:"current_index"`
 	CommitIndex   int32  `json:"commit_index"`
 
+	RevoteTime int64 `json:"revote_time"`
+	CommitTime int64 `json:"commit_time"`
+
 	MemoryTotal     uint64    `json:"memory_total"`
 	MemoryUsed      uint64    `json:"memory_used"`
 	MemoryAvailable uint64    `json:"memory_available"`
@@ -30,6 +33,7 @@ type Data struct {
 	Basic  BasicData  `json:"basic"`
 	Memory MemoryData `json:"memory"`
 	Raft   []RaftData `json:"raft"`
+	Time   TimeData   `json:"time"`
 }
 
 type BasicData struct {
@@ -45,6 +49,11 @@ type MemoryData struct {
 	MemoryUsed      uint64 `json:"memory_used"`
 	MemoryAvailable uint64 `json:"memory_available"`
 	MemoryCur       uint64 `json:"memory_cur"`
+}
+
+type TimeData struct {
+	RevoteTime int64 `json:"revote_time"`
+	CommitTime int64 `json:"commit_time"`
 }
 
 type RaftData struct {

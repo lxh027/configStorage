@@ -138,7 +138,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply *raftrpc.NewEntryReply, err error) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-
+	now := time.Now()
 	// if not a leader, return leader's msg
 	reply = &raftrpc.NewEntryReply{}
 	reply.LeaderID = rf.leaderID
@@ -167,7 +167,13 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 		rf.mu.Lock()
 		// if commit index > log index and commit success
 		if rf.commitIndex >= logIndex && rf.logs[logIndex].Status == true {
-			rf.logger.Printf("log %d committed", log.Index)
+			// calculate commit msg duration
+			d := time.Now().Sub(now)
+			rf.logger.Printf("log %d committed, using %d micro seconds", log.Index, d.Microseconds())
+			if len(rf.msgCommitTime) == 100 {
+				rf.msgCommitTime = rf.msgCommitTime[1:]
+			}
+			rf.msgCommitTime = append(rf.msgCommitTime, d)
 			reply.Success = true
 			reply.Msg = "ok"
 			return reply, nil

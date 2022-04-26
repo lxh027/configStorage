@@ -45,6 +45,8 @@ func GetMonitorData() {
 				MemoryAvailable: rm.MemoryAvailable,
 				MemoryUsed:      rm.MemoryUsed,
 				MemoryCur:       rm.MemoryCur,
+				RevoteTime:      rm.ReVoteTime,
+				CommitTime:      rm.CommitTime,
 				Time:            rm.Now,
 			}
 			mu.Lock()
