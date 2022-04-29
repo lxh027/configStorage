@@ -195,7 +195,7 @@ func (rf *Raft) loopCandidate() {
 		rf.votedFor = UnVoted
 		rf.mu.Unlock()
 		// sleep and wait for another election
-		timeout := random.Timeout(LatencyTimeout, RandTimeout)
+		timeout := random.Timeout(0, RandTimeout)
 		time.Sleep(timeout)
 	}
 }

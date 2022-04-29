@@ -164,8 +164,8 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 	rf.mu.Unlock()
 
 	rf.logger.Printf("new log entry at term %d index %d", log.Term, log.Index)
-	// check 4 times, for total 2s
-	for i := 0; i < 4; i++ {
+	// check 40 times, for total 2s
+	for i := 0; i < 40; i++ {
 		time.Sleep(NewEntryTimeout)
 		rf.mu.Lock()
 		// if commit index > log index and commit success

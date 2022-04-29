@@ -220,7 +220,7 @@ func (rf *Raft) startRaft() {
 		switch state {
 		case Follower:
 			// calculate re vote duration
-			if lastState != Follower && lastState != Leader {
+			if lastState == Candidate {
 				d := time.Now().Sub(now)
 				if len(rf.reVoteTime) == 100 {
 					rf.reVoteTime = rf.reVoteTime[1:]
@@ -235,7 +235,7 @@ func (rf *Raft) startRaft() {
 			now = time.Now()
 			go rf.candidate(ctx)
 		case Leader:
-			if lastState != Follower && lastState != Leader {
+			if lastState == Candidate {
 				d := time.Now().Sub(now)
 				if len(rf.reVoteTime) == 100 {
 					rf.reVoteTime = rf.reVoteTime[1:]

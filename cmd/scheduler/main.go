@@ -11,7 +11,7 @@ func main() {
 	var env string
 	var readPersist bool
 	flag.StringVar(&env, "env", "dev", "配置环境")
-	flag.BoolVar(&readPersist, "persist", true, "读取持久化数据")
+	flag.BoolVar(&readPersist, "persist", false, "读取持久化数据")
 	flag.Parse()
 
 	p := path.Join("./config", env, "register.yml")
