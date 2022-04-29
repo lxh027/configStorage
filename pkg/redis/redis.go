@@ -88,6 +88,14 @@ func (c *Client) PutToRedis(key string, value interface{}, timeout int) error {
 	return err
 }
 
+func (c *Client) PutToRedisLast(key string, value interface{}) error {
+	key = c.appendPrefix(key)
+	rc := c.Client.Get()
+	defer rc.Close()
+	_, err := rc.Do("SET", key, value)
+	return err
+}
+
 func (c *Client) DeleteFromRedis(key string) error {
 	key = c.appendPrefix(key)
 	rc := c.Client.Get()

@@ -3,7 +3,9 @@ package scheduler
 import (
 	"configStorage/api/register"
 	"configStorage/internal/raft"
+	"configStorage/pkg/config"
 	"configStorage/pkg/logger"
+	"configStorage/pkg/redis"
 	"configStorage/tools/md5"
 	"context"
 	"encoding/json"
@@ -12,6 +14,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"google.golang.org/grpc"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -23,14 +26,13 @@ type RegisterCenter struct {
 
 	register.UnimplementedKvStorageServer
 
+	redis *redis.Client
+
 	mu sync.Mutex
 
 	raftServer *grpc.Server
 
 	apiServer *grpc.Server
-
-	// a simple storage interface with Get and Set functions
-	s Storage
 
 	// raftCluster
 	clusters map[string]*raftCluster
@@ -71,29 +73,74 @@ type raftCluster struct {
 }
 
 type raftCfg struct {
-	uid        string
-	host       string
-	clientPort string
-	raftPort   string
-	taken      bool
+	Uid        string
+	Host       string
+	ClientPort string
+	RaftPort   string
+	Taken      bool
 }
 
 type namespace struct {
-	raftId     string
-	privateKey string
-	status     bool
+	RaftId     string
+	PrivateKey string
+	Status     bool
 }
 
-func NewRegisterCenter(config RegisterConfig) *RegisterCenter {
-	return &RegisterCenter{
-		s:         NewMapStorage(),
+type persist struct {
+	Clusters map[string]persistCluster
+	// raftIds groups names' of raft cluster
+	RaftIds []string
+	// storage namespace
+	Namespace map[string]namespace
+	// size raft cluster number
+	Size int
+}
+
+type persistCluster struct {
+	Size        int
+	Status      clusterStatus
+	ReceivedCnt int
+	Md5         string
+	RaftCfg     []raftCfg
+}
+
+func NewRegisterCenter(config RegisterConfig, redisConfig config.Redis, readPersist bool) *RegisterCenter {
+	redisClient, err := redis.NewRedisClient(&redisConfig)
+	if err != nil {
+		log.Printf("open connection with redis error: %v\n", err.Error())
+		redisClient = nil
+	}
+
+	rc := &RegisterCenter{
 		cfg:       config,
+		redis:     redisClient,
 		logger:    logger.NewLogger(make([]interface{}, 0), config.LogPrefix),
 		clusters:  make(map[string]*raftCluster),
 		raftIds:   make([]string, 0),
 		namespace: make(map[string]namespace),
 		size:      0,
 	}
+
+	if readPersist {
+		if p := readPersistRc(redisClient); p != nil {
+			rc.raftIds = p.RaftIds
+			rc.namespace = p.Namespace
+			rc.size = p.Size
+			for k, c := range p.Clusters {
+				rc.clusters[k] = &raftCluster{
+					once:        sync.Once{},
+					size:        c.Size,
+					status:      c.Status,
+					receivedCnt: c.ReceivedCnt,
+					md5:         c.Md5,
+					raftCfg:     c.RaftCfg,
+				}
+				rc.getConn(k)
+			}
+			log.Printf("read persist success: %v", p)
+		}
+	}
+	return rc
 }
 
 func (r *RegisterCenter) Start() {
@@ -161,9 +208,9 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	r.logger.Printf("peer count: %v, target count: %v", cluster.size, r.cfg.Size)
 
 	for i, instance := range cluster.raftCfg {
-		if instance.host == args.Host && instance.clientPort == args.ClientPort {
+		if instance.Host == args.Host && instance.ClientPort == args.ClientPort {
 			cluster.size--
-			cluster.raftCfg[i].taken = false
+			cluster.raftCfg[i].Taken = false
 			if cluster.size < r.cfg.Size && cluster.status != Changed {
 				cluster.status = Changed
 				cluster.once = sync.Once{}
@@ -178,17 +225,17 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 
 	// check if uid is in cluster
 	for _, instance := range cluster.raftCfg {
-		if instance.uid == args.Uid {
+		if instance.Uid == args.Uid {
 			return reply, RaftInstanceExistedErr
 		}
 	}
 
 	cfg := raftCfg{
-		uid:        args.Uid,
-		host:       args.Host,
-		clientPort: args.ClientPort,
-		raftPort:   args.RaftPort,
-		taken:      true,
+		Uid:        args.Uid,
+		Host:       args.Host,
+		ClientPort: args.ClientPort,
+		RaftPort:   args.RaftPort,
+		Taken:      true,
 	}
 
 	cluster.size++
@@ -196,7 +243,7 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	// fill the empty position
 	if cluster.status == Changed {
 		for i, _ := range cluster.raftCfg {
-			if cluster.raftCfg[i].taken == false {
+			if cluster.raftCfg[i].Taken == false {
 				cluster.raftCfg[i] = cfg
 			}
 		}
@@ -220,7 +267,6 @@ func (r *RegisterCenter) RegisterRaft(ctx context.Context, args *register.Regist
 	}
 	r.clusters[args.RaftID] = cluster
 
-	// TODO persist cluster status
 	reply.OK = true
 	return reply, nil
 }
@@ -248,7 +294,7 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	// check if raft id is existed
 	instanceId := -1
 	for id, instance := range cluster.raftCfg {
-		if instance.uid == args.Uid {
+		if instance.Uid == args.Uid {
 			instanceId = id
 			break
 		}
@@ -259,17 +305,15 @@ func (r *RegisterCenter) UnregisterRaft(ctx context.Context, args *register.Unre
 	}
 
 	cluster.size--
-	cluster.raftCfg[instanceId].taken = false
+	cluster.raftCfg[instanceId].Taken = false
 
 	if cluster.size < r.cfg.Size && cluster.status != Changed {
 		cluster.status = Changed
 		cluster.once = sync.Once{}
 	}
 
-	// TODO delete raft cluster size
 	r.clusters[args.RaftID] = cluster
 
-	// TODO persist cluster status
 	return reply, nil
 }
 
@@ -308,13 +352,14 @@ func (r *RegisterCenter) GetRaftRegistrations(ctx context.Context, args *registe
 	}
 
 	for idx, instance := range cluster.raftCfg {
-		rpc := raft.Rpc{ID: int32(idx), Host: instance.host, Port: instance.raftPort, CPort: instance.clientPort}
+		rpc := raft.Rpc{ID: int32(idx), Host: instance.Host, Port: instance.RaftPort, CPort: instance.ClientPort}
 		cfg.RaftPeers = append(cfg.RaftPeers, rpc)
-		if instance.uid == args.Uid {
+		if instance.Uid == args.Uid {
 			cfg.RaftRpc = rpc
 		}
 	}
-
+	// persist register
+	persistRc(r)
 	byteData, _ := json.Marshal(cfg)
 	reply.OK = true
 	reply.Config = byteData
@@ -332,12 +377,14 @@ func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNam
 	}
 
 	name := namespace{
-		raftId:     args.RaftId,
-		privateKey: args.PrivateKey,
+		RaftId:     args.RaftId,
+		PrivateKey: args.PrivateKey,
 	}
 
 	r.namespace[args.Name] = name
 	reply.OK = true
+	// persist register
+	persistRc(r)
 	return reply, nil
 }
 
@@ -350,7 +397,7 @@ func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClus
 	for raftID, cluster := range r.clusters {
 		addr := ""
 		for _, instance := range cluster.raftCfg {
-			addr = addr + instance.host + ":" + instance.clientPort + "\n"
+			addr = addr + instance.Host + ":" + instance.ClientPort + "\n"
 		}
 		re := register.GetClusterReply_Cluster{
 			RaftID:  raftID,
@@ -369,11 +416,23 @@ func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfig
 	ok := true
 	if namespace, ok = r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
+	} else if namespace.PrivateKey != args.PrivateKey {
 		return reply, PrivateKeyUnPatchErr
 	}
 
-	reply.Value = r.clusters[namespace.raftId].client.Get(args.Key)
+	redisKey := fmt.Sprintf("configCache.%s.%s", args.Namespace, args.Key)
+	if r.redis != nil {
+		if value, err := r.redis.GetFromRedis(redisKey); err == nil {
+			reply.Value = value.(string)
+			reply.OK = true
+			return reply, nil
+		}
+	}
+
+	reply.Value = r.clusters[namespace.RaftId].client.Get(args.Key)
+	if r.redis != nil {
+		_ = r.redis.PutToRedis(redisKey, reply.Value, 300)
+	}
 	reply.OK = true
 	return reply, nil
 }
@@ -386,11 +445,11 @@ func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *regist
 	ok := true
 	if namespace, ok = r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
+	} else if namespace.PrivateKey != args.PrivateKey {
 		return reply, PrivateKeyUnPatchErr
 	}
 
-	reply.Configs = r.clusters[namespace.raftId].client.PrefixConfig(args.Namespace)
+	reply.Configs = r.clusters[namespace.RaftId].client.PrefixConfig(args.Namespace)
 	r.logger.Printf("config: %v", reply.Configs)
 	reply.OK = true
 	return reply, nil
@@ -408,11 +467,12 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 
 	if namespace, ok := r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
+	} else if namespace.PrivateKey != args.PrivateKey {
 		return reply, PrivateKeyUnPatchErr
 	}
 
 	for _, op := range args.Ops {
+		go r.delRedis(args.Namespace, op.Key)
 		if op.Type == 0 {
 			if err := r.setConfig(args.Namespace, op); err != nil {
 				reply.LastCommitID = op.Id
@@ -434,15 +494,17 @@ func (r *RegisterCenter) DeleteNamespace(ctx context.Context, args *register.Del
 	reply = &register.DeleteNamespaceReply{}
 	if namespace, ok := r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
+	} else if namespace.PrivateKey != args.PrivateKey {
 		return reply, PrivateKeyUnPatchErr
 	}
 
-	err = r.clusters[r.namespace[args.Namespace].raftId].client.PrefixRemove(args.Namespace)
+	err = r.clusters[r.namespace[args.Namespace].RaftId].client.PrefixRemove(args.Namespace)
 	if err != nil {
 		return reply, err
 	}
 	delete(r.namespace, args.Namespace)
+	// persist register
+	persistRc(r)
 	return reply, nil
 }
 
@@ -455,7 +517,7 @@ func (r *RegisterCenter) TransNamespace(ctx context.Context, args *register.Tran
 	var ok bool
 	if namespace, ok = r.namespace[args.Namespace]; !ok {
 		return reply, NamespaceNotExistedErr
-	} else if namespace.privateKey != args.PrivateKey {
+	} else if namespace.PrivateKey != args.PrivateKey {
 		return reply, PrivateKeyUnPatchErr
 	}
 
@@ -463,27 +525,27 @@ func (r *RegisterCenter) TransNamespace(ctx context.Context, args *register.Tran
 		return reply, ClusterNotExistedErr
 	}
 
-	configs := r.clusters[namespace.raftId].client.PrefixConfig(args.Namespace)
+	configs := r.clusters[namespace.RaftId].client.PrefixConfig(args.Namespace)
 	err = r.clusters[args.RaftID].client.PrefixLoad(args.Namespace, configs)
 	if err != nil {
 		return reply, err
 	}
-	err = r.clusters[r.namespace[args.Namespace].raftId].client.PrefixRemove(args.Namespace)
+	err = r.clusters[r.namespace[args.Namespace].RaftId].client.PrefixRemove(args.Namespace)
 	if err != nil {
 		return reply, err
 	}
-	namespace.raftId = args.RaftID
+	namespace.RaftId = args.RaftID
 	r.namespace[args.Namespace] = namespace
 	return reply, nil
 }
 
 func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
-	raftID := r.namespace[name].raftId
+	raftID := r.namespace[name].RaftId
 	return r.clusters[raftID].client.Set(name+"."+args.Key, args.Value)
 }
 
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
-	raftID := r.namespace[name].raftId
+	raftID := r.namespace[name].RaftId
 	return r.clusters[raftID].client.Del(name + "." + args.Key)
 }
 
@@ -499,7 +561,7 @@ func (r *RegisterCenter) getConn(raftId string) {
 	}
 
 	for _, rfCfg := range cluster.raftCfg {
-		address := fmt.Sprintf("%s:%s", rfCfg.host, rfCfg.clientPort)
+		address := fmt.Sprintf("%s:%s", rfCfg.Host, rfCfg.ClientPort)
 		cfg.Addresses = append(cfg.Addresses, address)
 	}
 	r.logger.Printf("client cfg: %v", cfg)
@@ -513,4 +575,56 @@ func (r *RegisterCenter) getConn(raftId string) {
 	}
 
 	r.logger.Printf("connect with raft instances success")
+}
+
+func (r *RegisterCenter) delRedis(namespace, key string) {
+	if r.redis == nil {
+		return
+	}
+	redisKey := fmt.Sprintf("configCache.%s.%s", namespace, key)
+	_ = r.redis.DeleteFromRedis(redisKey)
+}
+
+func persistRc(r *RegisterCenter) {
+	if r.redis == nil {
+		return
+	}
+	p := persist{
+		Size:      r.size,
+		Namespace: r.namespace,
+		RaftIds:   r.raftIds,
+		Clusters:  make(map[string]persistCluster),
+	}
+	for k, c := range r.clusters {
+		p.Clusters[k] = persistCluster{
+			Size:        c.size,
+			Status:      c.status,
+			ReceivedCnt: c.receivedCnt,
+			Md5:         c.md5,
+			RaftCfg:     c.raftCfg,
+		}
+	}
+	if bts, err := json.Marshal(p); err == nil {
+		err = r.redis.PutToRedisLast("register.persist_status", bts)
+		if err == nil {
+			log.Printf("persist success: %v\n", p)
+		}
+	}
+}
+
+func readPersistRc(client *redis.Client) *persist {
+	if client == nil {
+		return nil
+	}
+	var p persist
+	if bts, err := client.GetFromRedis("register.persist_status"); err == nil && bts != nil {
+		err = json.Unmarshal(bts.([]byte), &p)
+		if err == nil {
+			log.Printf("read persist success: %v\n", p)
+			return &p
+		} else {
+			log.Printf("read persist error: %v", err.Error())
+		}
+	}
+	return nil
 }
