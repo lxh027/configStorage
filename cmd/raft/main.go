@@ -89,7 +89,7 @@ func main() {
 	if md5 == "" {
 		log.Fatalf("open connection error, addr: %s, error: %v", raftConfig.RegisterAddr, "connect register timeout")
 	}
-	time.Sleep(3 * time.Second)
+	//time.Sleep(3 * time.Second)
 
 	defer func(idx int64, raftID string, uid string) {
 		_, err = client.UnregisterRaft(context.Background(), &register.UnregisterRaftArgs{

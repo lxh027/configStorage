@@ -140,7 +140,6 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply *raftrpc.NewEntryReply, err error) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	now := time.Now()
 	// if not a leader, return leader's msg
 	reply = &raftrpc.NewEntryReply{}
 	reply.LeaderID = rf.leaderID
@@ -150,29 +149,32 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 		return reply, nil
 	}
 
-	logIndex := rf.currentIndex
-	rf.currentIndex = rf.currentIndex + 1
 	// new log
-	log := Log{
-		Entry:  args.Entry,
-		Term:   rf.currentTerm,
-		Type:   LogType(args.Type),
-		Index:  logIndex,
-		Status: true,
+	for _, entry := range args.Entry {
+		logIndex := rf.currentIndex
+		rf.currentIndex = rf.currentIndex + 1
+		log := Log{
+			Entry:  entry,
+			Term:   rf.currentTerm,
+			Type:   LogType(args.Type),
+			Index:  logIndex,
+			Status: true,
+		}
+		rf.logs = append(rf.logs, log)
+		rf.logger.Printf("new log entry at term %d index %d", log.Term, log.Index)
 	}
-	rf.logs = append(rf.logs, log)
+	logIndex := rf.currentIndex - 1
 	rf.mu.Unlock()
 
-	rf.logger.Printf("new log entry at term %d index %d", log.Term, log.Index)
-	// check 40 times, for total 2s
-	for i := 0; i < 40; i++ {
+	// check 200 times, for total 2s
+	for i := 0; i < 200; i++ {
 		time.Sleep(NewEntryTimeout)
 		rf.mu.Lock()
 		// if commit index > log index and commit success
 		if rf.commitIndex >= logIndex && rf.logs[logIndex].Status == true {
 			// calculate commit msg duration
-			d := time.Now().Sub(now)
-			rf.logger.Printf("log %d committed, using %d micro seconds", log.Index, d.Microseconds())
+			d := time.Duration(i) * NewEntryTimeout
+			rf.logger.Printf("log %d committed, using %d micro seconds", rf.logs[logIndex].Index, d.Microseconds())
 			if len(rf.msgCommitTime) == 100 {
 				rf.msgCommitTime = rf.msgCommitTime[1:]
 			}
@@ -183,14 +185,14 @@ func (rf *Raft) NewEntry(ctx context.Context, args *raftrpc.NewEntryArgs) (reply
 		}
 		// commit fail
 		if rf.logs[logIndex].Status == false {
-			rf.logger.Printf("log %d executed error", log.Index)
+			rf.logger.Printf("log %d executed error", rf.logs[logIndex].Index)
 			reply.Success = false
 			reply.Msg = "entry commit error"
 			return reply, nil
 		}
 		rf.mu.Unlock()
 	}
-	rf.logger.Printf("log %d process timeout", log.Index)
+	rf.logger.Printf("log %d process timeout", rf.logs[logIndex].Index)
 	reply.Success = false
 	reply.Msg = "Timeout"
 	return reply, nil

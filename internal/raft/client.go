@@ -20,6 +20,7 @@ type Client interface {
 	Get(string) string
 	Set(string, string) error
 	Del(string) error
+	BatchCommit([]Op) error
 
 	PrefixLoad(string, map[string]string) error
 	PrefixRemove(string) error
@@ -31,6 +32,12 @@ type rfClient struct {
 	logger    *logger.Logger
 	instances []raftrpc.StateClient
 	leaderId  int
+}
+
+type Op struct {
+	Type  int64
+	Key   string
+	Value string
 }
 
 func NewRaftClient(cfg ClientConfig) Client {
@@ -66,7 +73,7 @@ func (c *rfClient) PrefixLoad(prefix string, data map[string]string) error {
 		c.logger.Printf("parse data error %v", err)
 		return err
 	}
-	entry := raftrpc.NewEntryArgs{Entry: bts, Type: int32(LoadPrefix)}
+	entry := raftrpc.NewEntryArgs{Entry: [][]byte{bts}, Type: int32(LoadPrefix)}
 
 	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
 	if err != nil {
@@ -94,7 +101,7 @@ func (c *rfClient) PrefixLoad(prefix string, data map[string]string) error {
 }
 
 func (c *rfClient) PrefixRemove(prefix string) error {
-	entry := raftrpc.NewEntryArgs{Entry: []byte(prefix), Type: int32(RemovePrefix)}
+	entry := raftrpc.NewEntryArgs{Entry: [][]byte{[]byte(prefix)}, Type: int32(RemovePrefix)}
 
 	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
 	if err != nil {
@@ -136,7 +143,7 @@ func (c *rfClient) Get(key string) string {
 
 func (c *rfClient) Set(key string, value string) error {
 	command := fmt.Sprintf("set %s %s", key, value)
-	entry := raftrpc.NewEntryArgs{Entry: []byte(command), Type: int32(KV)}
+	entry := raftrpc.NewEntryArgs{Entry: [][]byte{[]byte(command)}, Type: int32(KV)}
 
 	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
 	if err != nil {
@@ -165,7 +172,7 @@ func (c *rfClient) Set(key string, value string) error {
 
 func (c *rfClient) Del(key string) error {
 	command := fmt.Sprintf("del %s", key)
-	entry := raftrpc.NewEntryArgs{Entry: []byte(command), Type: int32(KV)}
+	entry := raftrpc.NewEntryArgs{Entry: [][]byte{[]byte(command)}, Type: int32(KV)}
 
 	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
 	if err != nil {
@@ -189,5 +196,42 @@ func (c *rfClient) Del(key string) error {
 		}
 	}
 	c.logger.Printf("del kv error: %v, err: %v", key, reply.Msg)
+	return nil
+}
+
+func (c *rfClient) BatchCommit(ops []Op) error {
+	logs := make([][]byte, 0)
+	for _, op := range ops {
+		var command string
+		if op.Type == 0 {
+			command = fmt.Sprintf("set %s %s", op.Key, op.Value)
+		} else {
+			command = fmt.Sprintf("del %s", op.Key)
+		}
+		logs = append(logs, []byte(command))
+	}
+	entry := raftrpc.NewEntryArgs{Entry: logs, Type: int32(KV)}
+	reply, err := c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+	if err != nil {
+		return err
+	}
+	if reply.Success {
+		c.logger.Printf("batch commit ok\n")
+		return nil
+	}
+
+	if int(reply.LeaderID) != c.leaderId {
+		c.leaderId = int(reply.LeaderID)
+		c.logger.Printf("leader changed, resent")
+		reply, err = c.instances[c.leaderId].NewEntry(context.Background(), &entry)
+		if err != nil {
+			return err
+		}
+		if reply.Success {
+			c.logger.Printf("batch commit ok\n")
+			return nil
+		}
+	}
+	c.logger.Printf("batch commit error, err: %v", reply.Msg)
 	return nil
 }

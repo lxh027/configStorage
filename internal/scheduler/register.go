@@ -471,9 +471,11 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 		return reply, PrivateKeyUnPatchErr
 	}
 
+	ops := make([]raft.Op, 0)
 	for _, op := range args.Ops {
+		ops = append(ops, raft.Op{Type: op.Type, Key: args.Namespace + "." + op.Key, Value: op.Value})
 		go r.delRedis(args.Namespace, op.Key)
-		if op.Type == 0 {
+		/*if op.Type == 0 {
 			if err := r.setConfig(args.Namespace, op); err != nil {
 				reply.LastCommitID = op.Id
 				return reply, err
@@ -481,7 +483,11 @@ func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) 
 		} else if err := r.delConfig(args.Namespace, op); err != nil {
 			reply.LastCommitID = op.Id
 			return reply, err
-		}
+		}*/
+	}
+	if err := r.batchCommit(args.Namespace, ops); err != nil {
+		reply.LastCommitID = args.Ops[0].Id
+		return reply, err
 	}
 	reply.OK = true
 	reply.LastCommitID = args.Ops[len(args.Ops)-1].Id
@@ -547,6 +553,11 @@ func (r *RegisterCenter) setConfig(name string, args *register.ConfigOp) error {
 func (r *RegisterCenter) delConfig(name string, args *register.ConfigOp) error {
 	raftID := r.namespace[name].RaftId
 	return r.clusters[raftID].client.Del(name + "." + args.Key)
+}
+
+func (r *RegisterCenter) batchCommit(name string, args []raft.Op) error {
+	raftID := r.namespace[name].RaftId
+	return r.clusters[raftID].client.BatchCommit(args)
 }
 
 func (r *RegisterCenter) getConn(raftId string) {

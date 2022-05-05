@@ -54,7 +54,7 @@ message AppendEntriesReply {
 }
 
 message NewEntryArgs {
-  bytes Entry = 1;
+  repeated bytes Entry = 1;
   int32 Type = 2;
 }
 
