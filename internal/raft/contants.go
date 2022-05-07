@@ -44,7 +44,7 @@ const (
 	// AppendEntriesTimeout timeout for append entries
 	AppendEntriesTimeout = time.Millisecond * 300
 	// AppendEntriesDuration  append entry duration
-	AppendEntriesDuration = time.Millisecond * 200
+	AppendEntriesDuration = time.Millisecond * 50
 	// LatencyTimeout wait a timeout to continue
 	LatencyTimeout = time.Millisecond * 500
 	// HeartBeatTimeout follower heart beat timeout

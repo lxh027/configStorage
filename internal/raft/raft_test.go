@@ -167,7 +167,7 @@ func TestReelection(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// restart old leader
-	rafts[ld].Restart(rpcConfigs[ld].Host, rpcConfigs[ld].Port)
+	rafts[ld].Restart()
 
 	time.Sleep(5 * time.Second)
 

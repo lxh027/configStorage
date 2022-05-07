@@ -149,6 +149,8 @@ type StateClient interface {
 	// return key value
 	GetValue(ctx context.Context, in *GetValueArgs, opts ...grpc.CallOption) (*GetValueReply, error)
 	GetPrefixConfigs(ctx context.Context, in *GetPrefixConfigArgs, opts ...grpc.CallOption) (*GetPrefixConfigReply, error)
+	StopServer(ctx context.Context, in *ControllerMsg, opts ...grpc.CallOption) (*ControllerMsg, error)
+	StartServer(ctx context.Context, in *ControllerMsg, opts ...grpc.CallOption) (*ControllerMsg, error)
 }
 
 type stateClient struct {
@@ -186,6 +188,24 @@ func (c *stateClient) GetPrefixConfigs(ctx context.Context, in *GetPrefixConfigA
 	return out, nil
 }
 
+func (c *stateClient) StopServer(ctx context.Context, in *ControllerMsg, opts ...grpc.CallOption) (*ControllerMsg, error) {
+	out := new(ControllerMsg)
+	err := c.cc.Invoke(ctx, "/state/StopServer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *stateClient) StartServer(ctx context.Context, in *ControllerMsg, opts ...grpc.CallOption) (*ControllerMsg, error) {
+	out := new(ControllerMsg)
+	err := c.cc.Invoke(ctx, "/state/StartServer", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StateServer is the server API for State service.
 // All implementations must embed UnimplementedStateServer
 // for forward compatibility
@@ -195,6 +215,8 @@ type StateServer interface {
 	// return key value
 	GetValue(context.Context, *GetValueArgs) (*GetValueReply, error)
 	GetPrefixConfigs(context.Context, *GetPrefixConfigArgs) (*GetPrefixConfigReply, error)
+	StopServer(context.Context, *ControllerMsg) (*ControllerMsg, error)
+	StartServer(context.Context, *ControllerMsg) (*ControllerMsg, error)
 	mustEmbedUnimplementedStateServer()
 }
 
@@ -210,6 +232,12 @@ func (UnimplementedStateServer) GetValue(context.Context, *GetValueArgs) (*GetVa
 }
 func (UnimplementedStateServer) GetPrefixConfigs(context.Context, *GetPrefixConfigArgs) (*GetPrefixConfigReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPrefixConfigs not implemented")
+}
+func (UnimplementedStateServer) StopServer(context.Context, *ControllerMsg) (*ControllerMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopServer not implemented")
+}
+func (UnimplementedStateServer) StartServer(context.Context, *ControllerMsg) (*ControllerMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartServer not implemented")
 }
 func (UnimplementedStateServer) mustEmbedUnimplementedStateServer() {}
 
@@ -278,6 +306,42 @@ func _State_GetPrefixConfigs_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _State_StopServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ControllerMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StateServer).StopServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/state/StopServer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StateServer).StopServer(ctx, req.(*ControllerMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _State_StartServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ControllerMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StateServer).StartServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/state/StartServer",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StateServer).StartServer(ctx, req.(*ControllerMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // State_ServiceDesc is the grpc.ServiceDesc for State service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -296,6 +360,14 @@ var State_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPrefixConfigs",
 			Handler:    _State_GetPrefixConfigs_Handler,
+		},
+		{
+			MethodName: "StopServer",
+			Handler:    _State_StopServer_Handler,
+		},
+		{
+			MethodName: "StartServer",
+			Handler:    _State_StartServer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

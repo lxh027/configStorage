@@ -16,7 +16,6 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"google.golang.org/grpc"
 	"net"
-	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -155,29 +154,58 @@ func (rf *Raft) Start(md5 string) {
 func (rf *Raft) Kill() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
+	rf.persist()
+	rf.snapshot()
 	rf.state = Shutdown
 	rf.stateChange <- Shutdown
-	rf.rpcServer.GracefulStop()
-	rf.stateServer.GracefulStop()
+	go rf.rpcServer.Stop()
+	//go rf.stateServer.Stop()
 }
 
-func (rf *Raft) Restart(host string, port string) {
-	address := fmt.Sprintf("%s:%s", host, port)
+func (rf *Raft) Restart() {
+	// start rpc server
+	address := fmt.Sprintf("%s:%s", rf.raftCfg.Host, rf.raftCfg.Port)
 	l, err := net.Listen("tcp", address)
 	if err != nil {
 		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
 	}
-	var sOpts []grpc.ServerOption
+	if err != nil {
+		rf.logger.Fatalf("Start rpc server error: %v", err.Error())
+	}
+	sOpts := []grpc.ServerOption{
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(logger.NewZapLogger()))),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_recovery.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(logger.NewZapLogger()))),
+	}
 
 	rf.rpcServer = grpc.NewServer(sOpts...)
 	raftrpc.RegisterRaftServer(rf.rpcServer, rf)
+
+	rf.stateServer = grpc.NewServer(sOpts...)
+	raftrpc.RegisterStateServer(rf.stateServer, rf)
+
+	// connect redis
 	go func() {
-		err = rf.rpcServer.Serve(l)
+		for {
+			var redisErr error
+			rf.redisClient, redisErr = redis.NewRedisClient(&rf.redisCfg)
+			if redisErr == nil {
+				break
+			}
+			rf.logger.Printf("error connecting redis: %v", redisErr.Error())
+		}
 	}()
-	if err != nil {
-		rf.logger.Fatalf("Server rpc error: %v", err.Error())
-	}
-	rf.logger.Printf("restart Serve rpc success at %s", address)
+
+	go func() {
+		rf.logger.Printf("Serving raft rpc at %s", address)
+		err = rf.rpcServer.Serve(l)
+		if err != nil {
+			rf.logger.Fatalf("Start rpc server error: %v", err.Error())
+		}
+	}()
 	rf.readPersist()
 	// start raft
 	go rf.startRaft()
@@ -187,7 +215,7 @@ func (rf *Raft) Restart(host string, port string) {
 	rf.state = Follower
 
 	// report status periodically
-	go rf.reportStatus()
+	// go rf.reportStatus()
 
 }
 
@@ -293,10 +321,6 @@ func (rf *Raft) MemberChange(rpcConfig Config, md5 string) {
 func (rf *Raft) reportStatus() {
 	for {
 		rf.mu.Lock()
-		if rf.state == Shutdown {
-			rf.mu.Unlock()
-			return
-		}
 		rf.logger.Printf("{ state: %v, term: %d, index: %d }", rf.state, rf.currentTerm, rf.currentIndex)
 		rm := rf.getStatus()
 		rmJson, _ := json.Marshal(rm)
@@ -392,8 +416,6 @@ func (rf *Raft) snapshot() {
 	e.Encode(rf.storage.Copy())
 	data := w.Bytes()
 	rf.persister.SaveSnapshot(data)
-	rf.mu.Lock()
-	defer rf.mu.Unlock()
 	for i, log := range rf.logs {
 		if log.Index >= rf.lastApplied {
 			rf.logs = rf.logs[i:]
@@ -425,7 +447,7 @@ func (rf *Raft) readPersist() {
 	rf.logs = logs
 
 	// read snapshot
-	var sp interface{} = reflect.New(rf.storage.StorageType())
+	var sp map[string]map[string]string
 	snapshotData := rf.persister.ReadSnapshot()
 	r = bytes.NewBuffer(snapshotData)
 	d = labgob.NewDecoder(r)

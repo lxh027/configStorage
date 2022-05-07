@@ -16,8 +16,9 @@ service state {
   rpc GetValue(GetValueArgs) returns (GetValueReply);
 
   rpc GetPrefixConfigs(GetPrefixConfigArgs) returns (GetPrefixConfigReply);
+  rpc StopServer(ControllerMsg) returns (ControllerMsg);
+  rpc StartServer(ControllerMsg) returns (ControllerMsg);
 }
-
 
 message RequestVoteArgs {
   int32 Term         = 1;
@@ -79,3 +80,5 @@ message GetPrefixConfigArgs {
 message GetPrefixConfigReply {
   map<string, string> Config = 1;
 }
+
+message ControllerMsg {}

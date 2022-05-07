@@ -48,12 +48,15 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 	reply = &raftrpc.AppendEntriesReply{}
 	//raft.logger.Printf("receive heartbeat from leader %d [ term : %d, index: %d ]", args.LeaderID, args.Term, args.PrevLogIndex)
 	reply.Term = rf.currentTerm
-
-	if rf.currentTerm > args.Term {
+	if rf.leaderID != rf.id && rf.leaderID != args.LeaderID {
+		rf.logger.Printf("leader split, deny heartbeat")
+		reply.Success = false
+		return reply, nil
+	} else if rf.currentTerm > args.Term {
 		rf.logger.Printf("current term is bigger then leader's term, deny heartbeat")
 		reply.Success = false
 		return reply, nil
-	} else if rf.state == Candidate {
+	} else if rf.state != Follower {
 		// if instance is a candidate, deny the request
 		// and inform the leader's lost by add term id
 		if rf.currentTerm == args.Term {
@@ -210,4 +213,14 @@ func (rf *Raft) GetPrefixConfigs(ctx context.Context, args *raftrpc.GetPrefixCon
 	v := rf.storage.PrefixAll(args.Prefix)
 	reply.Config = *v
 	return reply, nil
+}
+
+func (rf *Raft) StopServer(ctx context.Context, args *raftrpc.ControllerMsg) (reply *raftrpc.ControllerMsg, err error) {
+	rf.Kill()
+	return nil, nil
+}
+
+func (rf *Raft) StartServer(ctx context.Context, args *raftrpc.ControllerMsg) (reply *raftrpc.ControllerMsg, err error) {
+	rf.Restart()
+	return nil, nil
 }

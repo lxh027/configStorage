@@ -389,8 +389,8 @@ func (r *RegisterCenter) NewNamespace(ctx context.Context, args *register.NewNam
 }
 
 func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClusterArgs) (reply *register.GetClusterReply, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	/*r.mu.Lock()
+	defer r.mu.Unlock()*/
 	reply = &register.GetClusterReply{
 		Clusters: make([]*register.GetClusterReply_Cluster, 0),
 	}
@@ -409,8 +409,8 @@ func (r *RegisterCenter) GetClusters(ctx context.Context, args *register.GetClus
 }
 
 func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfigArgs) (reply *register.GetConfigReply, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	/*r.mu.Lock()
+	defer r.mu.Unlock()*/
 	reply = &register.GetConfigReply{OK: false}
 	var namespace namespace
 	ok := true
@@ -438,8 +438,8 @@ func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfig
 }
 
 func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *register.GetConfigsByNamespaceArgs) (reply *register.GetConfigsByNamespaceReply, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	/*r.mu.Lock()
+	defer r.mu.Unlock()*/
 	reply = &register.GetConfigsByNamespaceReply{OK: false}
 	var namespace namespace
 	ok := true
@@ -456,8 +456,8 @@ func (r *RegisterCenter) GetConfigsByNamespace(ctx context.Context, args *regist
 }
 
 func (r *RegisterCenter) Commit(ctx context.Context, args *register.CommitArgs) (reply *register.CommitReply, err error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	/*r.mu.Lock()
+	defer r.mu.Unlock()*/
 	r.logger.Printf("start committing...namespace: %v, ops: %v", args.Namespace, args.Ops)
 	reply = &register.CommitReply{OK: false, LastCommitID: args.Ops[0].Id}
 
