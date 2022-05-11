@@ -36,19 +36,19 @@ const (
 	// NewEntryTimeout 500ms for 4 times
 	NewEntryTimeout = time.Millisecond * 10
 	// LeaderRentTimeout when time is due, state should change from leader to follower
-	LeaderRentTimeout = time.Second * 2
+	LeaderRentTimeout = time.Second * 1
 	// StatusLoggerTimeout report instance's status periodically
 	StatusLoggerTimeout = time.Second * 3
 	// ElectionTimeout timeout for election
-	ElectionTimeout = time.Millisecond * 500
+	ElectionTimeout = time.Millisecond * 150
 	// AppendEntriesTimeout timeout for append entries
-	AppendEntriesTimeout = time.Millisecond * 300
+	AppendEntriesTimeout = time.Millisecond * 150
 	// AppendEntriesDuration  append entry duration
 	AppendEntriesDuration = time.Millisecond * 50
 	// LatencyTimeout wait a timeout to continue
 	LatencyTimeout = time.Millisecond * 500
 	// HeartBeatTimeout follower heart beat timeout
-	HeartBeatTimeout = time.Millisecond * 1000
+	HeartBeatTimeout = time.Millisecond * 300
 	// RandTimeout a random timeout as a suffix
 	RandTimeout = time.Millisecond * 300
 )

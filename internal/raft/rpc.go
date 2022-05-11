@@ -30,6 +30,7 @@ func (rf *Raft) RequestVote(ctx context.Context, args *raftrpc.RequestVoteArgs) 
 	}
 
 	if rf.votedFor == UnVoted || rf.votedFor == args.CandidateID {
+		rf.heartbeat = true
 		rf.logger.Printf("voted for instance %d", args.CandidateID)
 		rf.votedFor = args.CandidateID
 		reply.VoteGranted = true
