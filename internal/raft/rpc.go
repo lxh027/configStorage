@@ -49,11 +49,7 @@ func (rf *Raft) AppendEntries(ctx context.Context, args *raftrpc.AppendEntriesAr
 	reply = &raftrpc.AppendEntriesReply{}
 	//raft.logger.Printf("receive heartbeat from leader %d [ term : %d, index: %d ]", args.LeaderID, args.Term, args.PrevLogIndex)
 	reply.Term = rf.currentTerm
-	if rf.leaderID != rf.id && rf.leaderID != args.LeaderID {
-		rf.logger.Printf("leader split, deny heartbeat")
-		reply.Success = false
-		return reply, nil
-	} else if rf.currentTerm > args.Term {
+	if rf.currentTerm > args.Term {
 		rf.logger.Printf("current term is bigger then leader's term, deny heartbeat")
 		reply.Success = false
 		return reply, nil

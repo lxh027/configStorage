@@ -48,7 +48,7 @@ const (
 	// LatencyTimeout wait a timeout to continue
 	LatencyTimeout = time.Millisecond * 500
 	// HeartBeatTimeout follower heart beat timeout
-	HeartBeatTimeout = time.Millisecond * 300
+	HeartBeatTimeout = time.Millisecond * 600
 	// RandTimeout a random timeout as a suffix
 	RandTimeout = time.Millisecond * 300
 )
