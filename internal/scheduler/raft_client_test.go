@@ -48,9 +48,9 @@ func TestRestartServer(t *testing.T) {
 func TestMultiSetOps(t *testing.T) {
 	client := NewSchedulerClient("172.17.0.1:2888")
 
-	const PNUM = 100
+	const PNUM = 1000
 	const NAMESPACE = "name"
-	const KEY = "UbGcExAzeAkAxvuE"
+	const KEY = "TVEqYZeFLMRKJsCs"
 	failNum, successNum := 0, 0
 	var timeout time2.Duration = 0
 	wg := sync.WaitGroup{}
@@ -71,6 +71,5 @@ func TestMultiSetOps(t *testing.T) {
 	wg.Wait()
 	var successRate float64 = float64(successNum) / float64(PNUM) * 100
 	var avgTimeout float64 = float64(timeout.Milliseconds()) / float64(successNum)
-	log.Printf(`successRate = %f%s\n ToTalNum = %d\n SuccessNum = %d\n`, successRate, "%", PNUM, successNum)
-	log.Printf("avg timeout = %f", avgTimeout)
+	log.Printf("\n\nsuccessRate = %f%s \nToTalNum = %d \nSuccessNum = %d \navg timeout = %fms \n\n", successRate, "%", PNUM, successNum, avgTimeout)
 }
