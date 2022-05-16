@@ -1,1 +1,0 @@
-import{s}from"./request.111ca7cf.js";const t=t=>s({url:"/user/getUsers",method:"post",data:t}),e=t=>s({url:"/user/setAdmin",method:"post",data:t}),a=t=>s({url:"/user/login",method:"post",data:t});export{t as g,e as s,a as u};
