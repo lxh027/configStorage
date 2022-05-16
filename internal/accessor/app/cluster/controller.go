@@ -15,7 +15,7 @@ var (
 
 func GetAllCluster(c *gin.Context) {
 	session := sessions.Default(c)
-	if v := session.Get(user.AdminSession); v != nil {
+	if v := session.Get(user.AdminSession); v == nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user not admin", v))
 		return
 	}
@@ -42,6 +42,16 @@ func GetUserCluster(c *gin.Context) {
 		userId = v.(int)
 	}
 
+	var query UserCluster
+	if c.ShouldBind(&query) != nil {
+		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "param bind error", nil))
+		return
+	}
+
+	if query.UserID != 0 {
+		userId = query.UserID
+	}
+	
 	var clusters []Cluster
 	var err error
 	if clusters, err = clusterService.GetUserClusters(userId); err != nil {
@@ -56,7 +66,7 @@ func GetUserCluster(c *gin.Context) {
 
 func AuthUserCluster(c *gin.Context) {
 	session := sessions.Default(c)
-	if v := session.Get(user.AdminSession); v != nil {
+	if v := session.Get(user.AdminSession); v == nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user not admin", v))
 		return
 	}
@@ -76,7 +86,7 @@ func AuthUserCluster(c *gin.Context) {
 
 func UnAuthUserCluster(c *gin.Context) {
 	session := sessions.Default(c)
-	if v := session.Get(user.AdminSession); v != nil {
+	if v := session.Get(user.AdminSession); v == nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user not admin", v))
 		return
 	}

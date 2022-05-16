@@ -74,7 +74,7 @@ func Login(c *gin.Context) {
 
 	var userID int
 	var ok bool
-	if userID, ok = userService.Login(user); !ok {
+	if userID, ok = userService.Login(&user); !ok {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, "user or password error", nil))
 		return
 	}

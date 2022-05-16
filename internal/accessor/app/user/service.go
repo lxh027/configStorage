@@ -9,9 +9,10 @@ type Service struct {
 	userDao Dao
 }
 
-func (s *Service) Login(user User) (int, bool) {
+func (s *Service) Login(user *User) (int, bool) {
 	passwordMd5 := md5.GetMd5(user.Password)
-	return s.userDao.CheckUserPassword(user.Username, passwordMd5)
+	user.Password = passwordMd5
+	return s.userDao.CheckUserPassword(user)
 }
 
 func (s *Service) AddUser(user User) bool {

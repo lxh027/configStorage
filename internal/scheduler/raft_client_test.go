@@ -15,9 +15,9 @@ import (
 var cfg = raft.ClientConfig{
 	Size: 3,
 	Addresses: []string{
-		"172.17.0.1:3001",
-		"172.17.0.1:3002",
-		"172.17.0.1:3003",
+		"47.93.158.27:3004",
+		"47.93.158.27:3005",
+		"47.93.158.27:3006",
 	},
 }
 var instances = make([]raftrpc.StateClient, cfg.Size)
@@ -35,22 +35,32 @@ func Init() {
 	}
 }
 
-func TestStopServer(t *testing.T) {
+func TestStopFollower(t *testing.T) {
 	Init()
 	instances[1].StopServer(context.Background(), &raftrpc.ControllerMsg{})
 }
 
-func TestRestartServer(t *testing.T) {
+func TestRestartFollower(t *testing.T) {
+	Init()
+	instances[1].StartServer(context.Background(), &raftrpc.ControllerMsg{})
+}
+
+func TestStopLeader(*testing.T) {
+	Init()
+	instances[1].StopServer(context.Background(), &raftrpc.ControllerMsg{})
+}
+
+func TestRestartLeader(t *testing.T) {
 	Init()
 	instances[1].StartServer(context.Background(), &raftrpc.ControllerMsg{})
 }
 
 func TestMultiSetOps(t *testing.T) {
-	client := NewSchedulerClient("172.17.0.1:2888")
+	client := NewSchedulerClient("47.93.158.27:2888")
 
-	const PNUM = 1000
-	const NAMESPACE = "name"
-	const KEY = "TVEqYZeFLMRKJsCs"
+	const PNUM = 20000
+	const NAMESPACE = "performTest"
+	const KEY = "ahDzdVvDeutBSHZC"
 	failNum, successNum := 0, 0
 	var timeout time2.Duration = 0
 	wg := sync.WaitGroup{}

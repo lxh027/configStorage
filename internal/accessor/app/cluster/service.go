@@ -40,6 +40,9 @@ func (s *Service) UnAuthorizeClusters(userID int, raftId string) error {
 	return s.clusterDao.DeleteUserCluster(userID, raftId)
 }
 
-func (s *Service) CheckUserCluster(userID int, raftID string) bool {
+func (s *Service) CheckUserCluster(userID int, raftID string, isAdmin int) bool {
+	if isAdmin != 0 {
+		return true
+	}
 	return s.clusterDao.CheckUserCluster(userID, raftID)
 }

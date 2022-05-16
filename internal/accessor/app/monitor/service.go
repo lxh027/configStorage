@@ -10,15 +10,15 @@ type Service struct {
 	monitorDao Dao
 }
 
-func (s *Service) GetRaftPeers(userID int, raftID string) ([]Peer, error) {
-	if !s.clusterDao.CheckUserCluster(userID, raftID) {
+func (s *Service) GetRaftPeers(userID int, raftID string, isAdmin bool) ([]Peer, error) {
+	if !isAdmin && !s.clusterDao.CheckUserCluster(userID, raftID) {
 		return nil, errors.New("user don't have cluster's authorization")
 	}
 	return s.monitorDao.GetClusterPeers(raftID)
 }
 
-func (s *Service) GetPeerMonitorData(userID int, raftID string, peerID int) (*Data, error) {
-	if !s.clusterDao.CheckUserCluster(userID, raftID) {
+func (s *Service) GetPeerMonitorData(userID int, raftID string, peerID int, isAdmin bool) (*Data, error) {
+	if !isAdmin && !s.clusterDao.CheckUserCluster(userID, raftID) {
 		return nil, errors.New("user don't have cluster's authorization")
 	}
 	var monitors []Monitor
