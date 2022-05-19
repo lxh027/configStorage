@@ -22,7 +22,7 @@ func (rf *Raft) follower(ctx context.Context) {
 }
 
 func (rf *Raft) candidate(ctx context.Context) {
-	rf.logger.Printf("start state ad candidate")
+	rf.logger.Printf("start state as candidate")
 	for {
 		select {
 		case <-ctx.Done():
@@ -35,7 +35,7 @@ func (rf *Raft) candidate(ctx context.Context) {
 }
 
 func (rf *Raft) leader(ctx context.Context) {
-	rf.logger.Printf("start state ad leader")
+	rf.logger.Printf("start state as leader")
 	heartbeatOk := make(chan struct{})
 	rentDue := make(chan struct{})
 
@@ -136,7 +136,6 @@ func (rf *Raft) loopCandidate() {
 					rf.mu.Lock()
 					defer rf.mu.Unlock()
 					if reply.Term > rf.currentTerm {
-						rf.currentTerm = reply.Term
 						rf.state = Follower
 						rf.votedFor = UnVoted
 						rf.stateChange <- Follower
@@ -302,6 +301,7 @@ func (rf *Raft) loopLeader() bool {
 		heartbeatOk = false
 		rf.mu.Lock()
 		if rf.state != Leader {
+			rf.mu.Unlock()
 			return false
 		}
 		rf.mu.Unlock()

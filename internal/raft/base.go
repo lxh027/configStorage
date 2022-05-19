@@ -15,6 +15,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/shirou/gopsutil/mem"
 	"google.golang.org/grpc"
+	"log"
 	"net"
 	"runtime"
 	"strings"
@@ -130,7 +131,7 @@ func (rf *Raft) Start(md5 string) {
 			rf.logger.Fatalf("over half of the peer client is closed")
 		}
 
-		rf.readPersist()
+		//rf.readPersist()
 
 		// start raft
 		go rf.startRaft()
@@ -208,6 +209,7 @@ func (rf *Raft) Restart() {
 	}()
 	rf.readPersist()
 	// start raft
+	go rf.checkCommit()
 	go rf.startRaft()
 
 	// set state
@@ -345,6 +347,7 @@ func (rf *Raft) checkCommit() {
 		if rf.lastApplied < rf.commitIndex {
 			for i, log := range rf.logs {
 				if log.Index > rf.lastApplied && log.Index <= rf.commitIndex {
+					rf.logger.Printf("new entry: type=%v, entry=%v", log.Term, log.Entry)
 					switch log.Type {
 					case KV:
 						command := string(log.Entry)
@@ -410,18 +413,14 @@ func (rf *Raft) persist() {
 }
 
 func (rf *Raft) snapshot() {
-	rf.logger.Printf("persist snapshot")
-	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	e.Encode(rf.storage.Copy())
-	data := w.Bytes()
-	rf.persister.SaveSnapshot(data)
-	for i, log := range rf.logs {
+	rf.logger.Printf("persist snapshot %v\n", rf.storage.Copy())
+	rf.persister.SaveSnapshot(rf.storage.Copy().(map[string]map[string]string))
+	/*for i, log := range rf.logs {
 		if log.Index >= rf.lastApplied {
 			rf.logs = rf.logs[i:]
 			break
 		}
-	}
+	}*/
 }
 
 func (rf *Raft) readPersist() {
@@ -447,14 +446,8 @@ func (rf *Raft) readPersist() {
 	rf.logs = logs
 
 	// read snapshot
-	var sp map[string]map[string]string
-	snapshotData := rf.persister.ReadSnapshot()
-	r = bytes.NewBuffer(snapshotData)
-	d = labgob.NewDecoder(r)
-	if d.Decode(&sp) != nil {
-		fmt.Println("Decode Error")
-	}
-	rf.storage.Load(sp)
+	log.Printf("read snapshot %v\n", rf.persister.ReadSnapshot())
+	//rf.storage.Load(rf.persister.ReadSnapshot())
 }
 
 func (rf *Raft) getStatus() ReportMsg {

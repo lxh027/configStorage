@@ -1,6 +1,7 @@
 package raft
 
 import (
+	"log"
 	"reflect"
 	"strings"
 )
@@ -141,6 +142,7 @@ func (s *namespaceStorage) RemovePrefix(prefix string) {
 
 func (s *namespaceStorage) Set(key string, value string) {
 	prefix := s.getPrefix(key)
+	log.Printf("prefix: %s\n", prefix)
 	var m map[string]string
 	var ok bool
 	if m, ok = s.storage[prefix]; !ok {

@@ -15,9 +15,9 @@ import (
 var cfg = raft.ClientConfig{
 	Size: 3,
 	Addresses: []string{
-		"47.93.158.27:3004",
-		"47.93.158.27:3005",
-		"47.93.158.27:3006",
+		"172.17.0.1:3001",
+		"172.17.0.1:3002",
+		"172.17.0.1:3003",
 	},
 }
 var instances = make([]raftrpc.StateClient, cfg.Size)
@@ -47,12 +47,12 @@ func TestRestartFollower(t *testing.T) {
 
 func TestStopLeader(*testing.T) {
 	Init()
-	instances[1].StopServer(context.Background(), &raftrpc.ControllerMsg{})
+	instances[2].StopServer(context.Background(), &raftrpc.ControllerMsg{})
 }
 
 func TestRestartLeader(t *testing.T) {
 	Init()
-	instances[1].StartServer(context.Background(), &raftrpc.ControllerMsg{})
+	instances[2].StartServer(context.Background(), &raftrpc.ControllerMsg{})
 }
 
 func TestMultiSetOps(t *testing.T) {

@@ -5,7 +5,7 @@ import "sync"
 type Persister struct {
 	mu        sync.Mutex
 	raftState []byte
-	snapshot  []byte
+	snapshot  map[string]map[string]string
 }
 
 func NewPersister() *Persister {
@@ -18,7 +18,7 @@ func (p *Persister) SaveRaftState(state []byte) {
 	p.raftState = state
 }
 
-func (p *Persister) SaveSnapshot(sp []byte) {
+func (p *Persister) SaveSnapshot(sp map[string]map[string]string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.snapshot = sp
@@ -30,14 +30,14 @@ func (p *Persister) ReadRaftState() []byte {
 	return p.raftState
 }
 
-func (p *Persister) SaveRaftStateAndSnapshot(state []byte, snapshot []byte) {
+func (p *Persister) SaveRaftStateAndSnapshot(state []byte, snapshot map[string]map[string]string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.snapshot = snapshot
 	p.raftState = state
 }
 
-func (p *Persister) ReadSnapshot() []byte {
+func (p *Persister) ReadSnapshot() map[string]map[string]string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.snapshot
