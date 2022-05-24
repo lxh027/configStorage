@@ -422,7 +422,7 @@ func (r *RegisterCenter) GetConfig(ctx context.Context, args *register.GetConfig
 
 	redisKey := fmt.Sprintf("configCache.%s.%s", args.Namespace, args.Key)
 	if r.redis != nil {
-		if value, err := r.redis.GetFromRedis(redisKey); err == nil {
+		if value, err := r.redis.GetFromRedis(redisKey); value != nil && err == nil {
 			reply.Value = value.(string)
 			reply.OK = true
 			return reply, nil

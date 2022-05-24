@@ -76,6 +76,9 @@ func (s *SCDClient) GetConfig(namespace string, privateKey string, key string) (
 	}
 
 	reply, err := s.KvStorageClient.GetConfig(context.Background(), &args)
+	if err != nil {
+		return "", err
+	}
 	return reply.Value, err
 }
 
