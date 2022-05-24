@@ -7,6 +7,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 	"log"
+	"math/rand"
 	"sync"
 	"testing"
 	time2 "time"
@@ -15,9 +16,7 @@ import (
 var cfg = raft.ClientConfig{
 	Size: 3,
 	Addresses: []string{
-		"172.17.0.1:3001",
-		"172.17.0.1:3002",
-		"172.17.0.1:3003",
+		"10.22.185.15:3001", "10.22.185.15:3002", "10.22.185.15:3003 ",
 	},
 }
 var instances = make([]raftrpc.StateClient, cfg.Size)
@@ -82,4 +81,54 @@ func TestMultiSetOps(t *testing.T) {
 	var successRate float64 = float64(successNum) / float64(PNUM) * 100
 	var avgTimeout float64 = float64(timeout.Milliseconds()) / float64(successNum)
 	log.Printf("\n\nsuccessRate = %f%s \nToTalNum = %d \nSuccessNum = %d \navg timeout = %fms \n\n", successRate, "%", PNUM, successNum, avgTimeout)
+}
+
+func TestMultiGetOps(t *testing.T) {
+	client := NewSchedulerClient("172.17.0.1:2888")
+
+	const PNUM = 5000
+	const NAMESPACE = "name"
+	const KEY = "ksfKKYFuhtjVMqmx"
+	wg := sync.WaitGroup{}
+	wg.Add(PNUM)
+	keys := new([PNUM]string)
+	for i := 0; i < PNUM; i++ {
+		idx := i
+		go func() {
+			op := Log{Key: random.RandString(5), Value: random.RandString(5)}
+			if _, err := client.Commit(NAMESPACE, KEY, []Log{op}); err == nil {
+				keys[idx] = op.Key
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	const RNUM = 10000
+	wg.Add(RNUM)
+	var timeout time2.Duration = 0
+
+	for i := 0; i < RNUM; i++ {
+		go func() {
+			//p := rand.Int() % 100
+			var idx int
+			//if p <= 10 {
+			idx = rand.Int() % (PNUM / 10)
+			//} else {
+			//	idx = rand.Int() % PNUM
+			//}
+			key := "name." + keys[idx]
+			time := time2.Now()
+			if _, err := client.GetConfig(NAMESPACE, KEY, key); err == nil {
+				timeout += time2.Now().Sub(time)
+			} else {
+				log.Println(err.Error())
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	var avgTimeout float64 = float64(timeout.Milliseconds()) / float64(RNUM)
+	log.Printf("\n\navg timeout = %fms \n\n", avgTimeout)
 }
