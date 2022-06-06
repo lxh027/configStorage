@@ -10,6 +10,11 @@ type Log struct {
 	Status      int    `json:"status"`
 }
 
+type WithUsername struct {
+	Log
+	Username string `json:"username"`
+}
+
 type FetchQuery struct {
 	NamespaceID int `json:"namespace_id"`
 	PageIndex   int `json:"pageIndex"`

@@ -12,12 +12,12 @@ type Service struct {
 	logDao       Dao
 }
 
-func (s *Service) GetLogs(userID int, namespaceID int, offset, limit int) ([]Log, error) {
+func (s *Service) GetLogs(userID int, namespaceID int, offset, limit int) ([]WithUsername, error) {
 	priv := s.namespaceDao.CheckPriv(userID, namespaceID)
 	if priv == namespace.Abandon {
 		return nil, errors.New("not authorized")
 	}
-	return s.logDao.GetLogs(namespaceID, offset, limit)
+	return s.logDao.GetLogsWithUsername(namespaceID, offset, limit)
 }
 
 func (s *Service) GetConfigs(userID int, namespaceID int) ([]KV, error) {

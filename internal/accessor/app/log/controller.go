@@ -29,7 +29,7 @@ func GetAllLogs(c *gin.Context) {
 		return
 	}
 
-	var logs []Log
+	var logs []WithUsername
 	var err error
 	if logs, err = logService.GetLogs(userId, query.NamespaceID, query.PageSize*(query.PageIndex-1), query.PageSize); err != nil {
 		c.JSON(http.StatusOK, formatter.ApiReturn(global.CodeError, err.Error(), nil))

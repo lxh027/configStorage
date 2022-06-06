@@ -27,6 +27,17 @@ func (dao *Dao) GetLogs(namespaceID, offset, limit int) ([]Log, error) {
 	return logs, err
 }
 
+func (dao *Dao) GetLogsWithUsername(namespaceID, offset, limit int) ([]WithUsername, error) {
+	var logs []WithUsername
+
+	err := global.MysqlClient.Model(Log{}).
+		Select("log.id, log.type, log.key, log.value, log.namespace_id, log.status, user.username").
+		Joins("join user on user.id = log.user_id").
+		Where("log.namespace_id = ?", namespaceID).Order("log.id desc").
+		Offset(offset).Limit(limit).Find(&logs).Error
+	return logs, err
+}
+
 func (dao *Dao) GetLogByID(logID int) (Log, error) {
 	var log Log
 	err := global.MysqlClient.Where("id = ?", logID).First(&log).Error
